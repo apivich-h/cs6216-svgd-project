@@ -1,53 +1,81 @@
 import matplotlib.pyplot as plt
-import tqdm
 from scipy import stats
 import numpy as np
 
-import torch
-import pyro
-import pyro.distributions as dist
-from pyro.optim import Adam
+from jax import random
+import numpyro
+import numpyro.distributions as dist
+from numpyro.optim import Adam
+from numpyro.infer import Predictive, Trace_ELBO, init_to_uniform, init_to_feasible, init_to_value
+from numpyro.infer.autoguide import AutoNormal
 
-from pyro.infer.svgd import SVGD, RBFSteinKernel
+from numpyro.contrib.einstein.steinvi import SteinVI
+from numpyro.contrib.einstein.kernels import RBFKernel
 
 shift = 10.
 
 
 def p(x):
-    return (1 / 3) * stats.norm(shift - 2., 1.).pdf(x) + (2 / 3) * stats.norm(shift + 2., 1.).pdf(x)
+    return stats.norm.pdf(x, loc=0., scale=1.)
 
 
-def multimodal_model():
+def data():
+    return np.random.normal(loc=0., scale=1., size=(1000,))
+
+
+def multimodal_model(obs=None):
     # generate multi-peak Normal distribution
     # to determine peak we use beta distribution (so that the term is differentiable)
-    z = pyro.sample("z", dist.Beta(0.002, 0.001))
-    return pyro.sample("mu", dist.Normal(torch.Tensor([shift - 2.]) + 4. * z, torch.Tensor([1.])))
+    # z = numpyro.sample("z", dist.Beta(0.002, 0.001))
+    mu = numpyro.sample("mu", dist.Normal(np.array([-10.]), np.array([1.])))
+    with numpyro.plate("data", size=len(obs)):
+        numpyro.sample("obs", dist.Normal(mu, np.array([1.])), obs=obs)
+
+
+def guide():
+    numpyro.param("mu", lambda x: dist.Normal(np.array([-10.]), np.array([1.]))())
 
 
 if __name__ == '__main__':
 
+    x_data = data()
     num_particles = 1000
     steps_pic = [1, 25, 50, 75, 100, 150]
 
-    pyro.clear_param_store()
-
-    kernel = RBFSteinKernel()
-    adam = Adam({"lr": 0.1})
-    svgd = SVGD(multimodal_model, kernel, adam, num_particles=num_particles, max_plate_nesting=1)
-
     fig = plt.figure(figsize=(4 * len(steps_pic), 4))
     axs = fig.subplots(nrows=1, ncols=len(steps_pic), sharex=True, sharey=True)
-    pic_i = 0
-    xs = np.linspace(shift - 4., shift + 4., 200)
+    xs = np.linspace(-6, 6, 200)
 
-    for i in tqdm.trange(steps_pic[-1] + 1):
-        svgd.step()
-        if i in steps_pic:
-            particles = svgd.get_named_particles()['mu'].detach().numpy()
-            ax = axs[pic_i]
-            ax.hist(particles, bins=50, density=True)
-            ax.plot(xs, p(xs))
-            ax.set_title(f'Iteration {i + 1}')
-            pic_i += 1
+    inf_key, pred_key, data_key = random.split(random.PRNGKey(42), 3)
+    rng_key, inf_key = random.split(inf_key)
+
+    svgd = SteinVI(model=multimodal_model,
+                   guide=AutoNormal(multimodal_model),
+                   optim=Adam(step_size=0.1),
+                   loss=Trace_ELBO(100),
+                   kernel_fn=RBFKernel(),
+                   num_particles=num_particles)
+
+    steps_elapsed = 0
+
+    for (ax, step) in zip(axs, steps_pic):
+
+        result = svgd.run(rng_key, step - steps_elapsed, x_data)
+        steps_elapsed = step
+
+        pred = Predictive(
+            multimodal_model,
+            return_sites=['mu'],
+            guide=svgd.guide,
+            params=svgd.get_params(result.state),
+            num_samples=1,
+            batch_ndims=1,  # stein particle dimension
+        )
+
+        mu = pred(pred_key, x_data)['mu']
+
+        ax.hist(mu.flatten(), bins=50)
+        # ax.plot(xs, p(xs))
+        ax.set_title(f'{step} iterations')
 
     fig.savefig('figs/dist_matching_svgd')

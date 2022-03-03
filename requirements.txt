@@ -1,6 +1,7 @@
 matplotlib==3.5.1
 numpy==1.22.2
-pyro-ppl==1.8.0
 scipy==1.8.0
 jupyter
 tqdm
+numpyro==0.9.1
+funsor
