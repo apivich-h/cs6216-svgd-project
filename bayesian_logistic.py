@@ -1,17 +1,5 @@
-import jax.random
 import numpy as np
 import matplotlib.pyplot as plt
-import tqdm
-
-# import pyro
-# import pyro.distributions as dist
-# from pyro.optim import Adam
-#
-# from pyro.infer.svgd import SVGD, RBFSteinKernel
-# from pyro.infer.mcmc import MCMC
-# from pyro.infer.mcmc.nuts import NUTS
-# from pyro.infer import SVI, Trace_ELBO
-# from pyro.infer.autoguide import AutoNormal
 
 from jax import random
 import numpyro
@@ -29,41 +17,62 @@ from numpyro.infer.svi import SVI
 n = 500
 
 
-def generate_gmm(seed=None):
+def generate_gmm(dims=2, count=500, seed=None):
     np.random.seed(seed)
 
-    xs = np.empty((n, 2))
-    ys = np.empty((n,))
-    for i in range(500):
+    centre = np.sqrt(1 / dims)
+    xs = np.empty((count, dims))
+    ys = np.empty((count,))
+    for i in range(count):
         y = np.random.binomial(1, 1 / 3)
         if y == 0:
-            x = np.random.multivariate_normal([1., 1.], [[1., 0.2], [0.2, 0.4]])
+            x = np.random.multivariate_normal(centre * np.ones(dims), np.identity(dims))
         else:
-            x = np.random.multivariate_normal([-1., -1.], [[0.7, 0.3], [0.3, 1.2]])
+            x = np.random.multivariate_normal(- centre * np.ones(dims), np.identity(dims))
         xs[i] = x
         ys[i] = y
 
     return xs, ys
 
 
-def logistic_reg_model(x_data, y_data=None):
-    # prior distributions for alpha and w
-    alpha = numpyro.sample("alpha", dist.Gamma(1., 0.01))
-    with numpyro.plate("wgt", 2, dim=-1):
-        w = numpyro.sample("w", dist.Normal(np.zeros(2), (1. / alpha) * np.ones(2)))
-    with numpyro.plate("data", len(x_data), dim=-1):
-        logits = x_data @ w
-        numpyro.sample("obs", dist.Bernoulli(logits=logits), obs=y_data)
+def logistic_reg_model_generator(dims=2, bias=False):
+
+    def logistic_reg_model(x_data, y_data=None):
+        # prior distributions for alpha and w
+        alpha = numpyro.sample("alpha", dist.Gamma(1., 0.01))
+        with numpyro.plate("wgt", dims, dim=-1):
+            w = numpyro.sample("w", dist.Normal(np.zeros(dims), (1. / alpha) * np.ones(dims)))
+        if bias:
+            b = numpyro.sample("b", dist.Normal(0., 1.))
+            with numpyro.plate("data_covertype", len(x_data), dim=-1):
+                logits = x_data @ w + b
+                numpyro.sample("obs", dist.Bernoulli(logits=logits), obs=y_data)
+        else:
+            with numpyro.plate("data_covertype", len(x_data), dim=-1):
+                logits = x_data @ w
+                numpyro.sample("obs", dist.Bernoulli(logits=logits), obs=y_data)
+
+    return logistic_reg_model
+
+
+def metrics(ys_test, ys_pred):
+    acc = (ys_test * ys_pred + (1 - ys_test) * (1 - ys_pred)).mean()
+    abs_acc = (ys_test == (ys_pred > 0.5).astype(np.int32)).astype(np.int32).mean()
+    logp = (ys_test * np.log(ys_pred) + (1 - ys_test) * np.log(1 - ys_pred))
+    logp = logp[~np.isnan(logp)].mean()
+    return acc, abs_acc, logp
 
 
 if __name__ == '__main__':
 
     # dataset
     xs, ys = generate_gmm()
+    model = logistic_reg_model_generator()
 
     # for plotting purposes
-    steps_pic = [1, 20, 50, 100, 150]
-    x0_sp = np.linspace(-4., 4.)
+    # steps_pic = [1, 20]
+    steps_pic = [1, 20, 50, 100, 150, 300]
+    x0_sp = np.linspace(-4., 4., num=150)
     fig = plt.figure(figsize=(6 * (len(steps_pic) + 1), 5))
     axs = fig.subplots(nrows=1, ncols=len(steps_pic) + 2, sharex=True, sharey=True)
     axs[0].scatter(xs[ys == 0, 0], xs[ys == 0, 1], s=2)
@@ -71,6 +80,8 @@ if __name__ == '__main__':
     axs[0].set_xlim((-4, 4))
     axs[0].set_ylim((-4, 4))
     pic_i = 1
+
+    x1_plot, x2_plot = np.meshgrid(x0_sp, x0_sp)
 
     # SVGD ALGORITHM
     num_particles = 100
@@ -81,8 +92,8 @@ if __name__ == '__main__':
     rng_key, inf_key = random.split(inf_key)
 
     svgd = SteinVI(
-        model=logistic_reg_model,
-        guide=AutoNormal(logistic_reg_model),
+        model=model,
+        guide=AutoNormal(model, init_scale=1.),
         kernel_fn=RBFKernel(),
         loss=Trace_ELBO(),
         optim=Adam(0.1),
@@ -95,7 +106,7 @@ if __name__ == '__main__':
         steps_elapsed = step
 
         pred = Predictive(
-            logistic_reg_model,
+            model,
             return_sites=['w'],
             guide=svgd.guide,
             params=svgd.get_params(result.state),
@@ -107,13 +118,30 @@ if __name__ == '__main__':
         ax.scatter(xs[ys == 0, 0], xs[ys == 0, 1], s=2)
         ax.scatter(xs[ys == 1, 0], xs[ys == 1, 1], s=2)
 
+        grid = np.zeros_like(x1_plot)
         ws = pred(pred_key, xs)['w']
         for w in ws[0]:
-            wi_0, wi_1 = w
-            ax.plot(x0_sp, -wi_0 * x0_sp / wi_1, color='black', alpha=min(1, 20. / n))
+            wi_1, wi_2 = w
+            grid += (wi_1 * x1_plot + wi_2 * x2_plot > 0)
+            # ax.plot(x0_sp, -wi_0 * x0_sp / wi_1, color='black', alpha=min(1, 20. / count))
+        cm = plt.cm.get_cmap('viridis')
+        ax.pcolormesh(x1_plot, x2_plot, grid, cmap=cm, alpha=0.3)
 
         ax.set_title(f'Iteration {step}')
         pic_i += 1
+
+        # pred = Predictive(
+        #     model,
+        #     guide=svgd.guide,
+        #     params=svgd.get_params(result.state),
+        #     num_samples=num_particles,
+        #     batch_ndims=1,  # stein particle dimension
+        # )
+        # ys_pred = pred(pred_key, xs)['obs'][0].mean(axis=0)
+        # ys_actual = ys.flatten()
+        # acc = ((ys_pred > 0.5) == ys_actual).astype(np.int32).mean()
+        # logp = (ys_actual * np.log(ys_pred) + (1 - ys_actual) * np.log(1 - ys_pred)).mean()
+        # print(acc, logp)
 
     # NUTS ALGORITHM
     print("NUTS")
@@ -122,7 +150,7 @@ if __name__ == '__main__':
     inf_key, pred_key, data_key = random.split(random.PRNGKey(42), 3)
     rng_key, inf_key = random.split(inf_key)
 
-    nuts_kernel = NUTS(logistic_reg_model, adapt_step_size=True)
+    nuts_kernel = NUTS(model, adapt_step_size=True)
     mcmc = MCMC(nuts_kernel, num_samples=n_nuts, num_warmup=n_nuts)
     mcmc.run(rng_key, xs, ys)
 
@@ -130,59 +158,12 @@ if __name__ == '__main__':
     ax_nuts.set_title("NUTS")
     ax_nuts.scatter(xs[ys == 0, 0], xs[ys == 0, 1], s=2)
     ax_nuts.scatter(xs[ys == 1, 0], xs[ys == 1, 1], s=2)
+    grid = np.zeros_like(x1_plot)
     for w_sample in mcmc.get_samples()['w']:
-        wi_0, wi_1 = w_sample
-        ax_nuts.plot(x0_sp, -wi_0 * x0_sp / wi_1, color='black', alpha=0.005)
+        wi_1, wi_2 = w_sample
+        grid += (wi_1 * x1_plot + wi_2 * x2_plot > 0)
+    cm = plt.cm.get_cmap('viridis')
+    ax_nuts.pcolormesh(x1_plot, x2_plot, grid, cmap=cm, alpha=0.3)
     pic_i += 1
 
-    # # VI ALGORITHM
-    # pyro.clear_param_store()
-    # print("SVI")
-    #
-    # adam_params = {"lr": 0.0005, "betas": (0.90, 0.999)}
-    # optimizer = Adam(adam_params)
-    # svi = SVI(logistic_reg_model, AutoNormal(logistic_reg_model), optimizer, loss=Trace_ELBO())
-    # n_steps = steps_pic[-1]
-    # # do gradient steps
-    # for step in tqdm.trange(n_steps):
-    #     svi.step(xs_tens, ys_tens)
-    #
-    # ax_svi = axs[-1]
-    # ax_svi.set_title("SVI")
-    # ax_svi.scatter(xs[ys == 0, 0], xs[ys == 0, 1], s=2)
-    # ax_svi.scatter(xs[ys == 1, 0], xs[ys == 1, 1], s=2)
-    # w_0, w_1 = pyro.param("w0").detach().numpy()
-    # ax_svi.plot(x0_sp, -w_0 * x0_sp / w_1, color='black')
-
-    # fig.tight_layout()
     fig.savefig('figs/bayes_logistic')
-
-
-# from jax import random
-# import jax.numpy as jnp
-# import numpyro
-# import numpyro.distributions as dist
-# from numpyro.distributions import constraints
-# from numpyro.infer import Predictive, SVI, Trace_ELBO
-#
-# def model(data):
-#     f = numpyro.sample("latent_fairness", dist.Beta(10, 10))
-#     with numpyro.plate("N", data.shape[0]):
-#         numpyro.sample("obs", dist.Bernoulli(f), obs=data)
-#
-# def guide(data):
-#     alpha_q = numpyro.param("alpha_q", 15., constraint=constraints.positive)
-#     beta_q = numpyro.param("beta_q", lambda rng_key: random.exponential(rng_key),
-#                            constraint=constraints.positive)
-#     numpyro.sample("latent_fairness", dist.Beta(alpha_q, beta_q))
-#
-# data = jnp.concatenate([jnp.ones(6), jnp.zeros(4)])
-# optimizer = numpyro.optim.Adam(step_size=0.0005)
-# svi = SVI(model, guide, optimizer, loss=Trace_ELBO())
-# svi_result = svi.run(random.PRNGKey(0), 2000, data)
-# params = svi_result.params
-# inferred_mean = params["alpha_q"] / (params["alpha_q"] + params["beta_q"])
-# # get posterior samples
-# predictive = Predictive(guide, params=params, num_samples=1000)
-# samples = predictive(random.PRNGKey(1), data)
-# print(samples)
