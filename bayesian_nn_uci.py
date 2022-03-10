@@ -1,15 +1,13 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import scipy.io
 import pandas as pd
-import time
-from functools import partial
 
 from bayesian_nn import train_svgd, train_nuts, metrics
+from svgd_original_nn import train_original_svgd
 from bbb.bbb_training import train_bbb
+from pbp.pbp_training import train_pbp
 from data_uci.uci import load_uci_dataset, UCI_SETS
 
-MINIBATCHES = 200
+MINIBATCHES = 100
+EPOCHS = 40
 
 
 def _hidden_dim_for_dataset(d):
@@ -17,8 +15,8 @@ def _hidden_dim_for_dataset(d):
 
 
 def _repeats_for_dataset(d):
-    return 1
-    # return 5 if d == 'protein' else 20
+    # return 2
+    return 5 if d == 'protein' else 10
 
 
 def _run_svgd(xs_train, ys_train, xs_test, dset):
@@ -27,32 +25,60 @@ def _run_svgd(xs_train, ys_train, xs_test, dset):
                       xs_test,
                       hidden_dim=_hidden_dim_for_dataset(dset),
                       num_particles=20,
-                      num_steps=1000 * xs_train.shape[0] // MINIBATCHES,
-                      subsample_size=MINIBATCHES)
+                      num_steps=EPOCHS * xs_train.shape[0] // MINIBATCHES,
+                      subsample_size=MINIBATCHES,
+                      lr=1e-1)
 
 
-def _run_bbb(xs_train, ys_train, xs_test, dset):
-    return train_bbb(xs_train,
+def _run_original_svgd(xs_train, ys_train, xs_test, dset):
+    return train_original_svgd(xs_train,
+                               ys_train,
+                               xs_test,
+                               hidden_dim=_hidden_dim_for_dataset(dset),
+                               num_particles=20,
+                               num_steps=2000,
+                               subsample_size=MINIBATCHES,
+                               lr=1e-3)
+
+
+# def _run_bbb(xs_train, ys_train, xs_test, dset):
+#     return train_bbb(xs_train,
+#                      ys_train,
+#                      xs_test,
+#                      hidden_dim=_hidden_dim_for_dataset(dset),
+#                      num_particles=50,
+#                      num_steps=10000,
+#                      batch_size=xs_train.shape[0],
+#                      lr=0.001)
+
+
+def _run_pbp(xs_train, ys_train, xs_test, dset):
+    return train_pbp(xs_train,
                      ys_train,
                      xs_test,
                      hidden_dim=_hidden_dim_for_dataset(dset),
-                     num_particles=50,
-                     num_epochs=10000,
-                     batch_size=xs_train.shape[0],
-                     lr=0.001)
+                     num_epochs=EPOCHS)
 
 
-def _run_nuts(xs_train, ys_train, xs_test, dset):
-    return train_nuts(xs_train,
-                      ys_train,
-                      xs_test,
-                      hidden_dim=_hidden_dim_for_dataset(dset),
-                      n_nuts=100)
+# def _run_nuts(xs_train, ys_train, xs_test, dset):
+#     return train_nuts(xs_train,
+#                       ys_train,
+#                       xs_test,
+#                       hidden_dim=_hidden_dim_for_dataset(dset),
+#                       n_nuts=100)
 
 
 if __name__ == '__main__':
 
-    results = []
+    fname = './results/bnn_results_uci.csv'
+
+    try:
+        df = pd.read_csv(fname)
+        results = df.to_dict('records')
+        done_cases = {(x['alg'], x['dset'], x['set']) for x in results}
+    except (FileNotFoundError, pd.errors.EmptyDataError):
+        results = []
+        done_cases = set()
 
     try:
         for dset in UCI_SETS:
@@ -61,15 +87,19 @@ if __name__ == '__main__':
 
                 print(f'{dset}, repeat {r}')
 
-                for (alg, fn) in [('svgd', _run_svgd),
-                                  ('bbb', _run_bbb),
-                                  # ('nuts', _run_nuts)
-                                  ]:
+                for (alg, fn) in [
+                    ('svgd', _run_svgd),
+                    # ('svgd_orig', _run_original_svgd),
+                    # ('pbp', _run_pbp),
+                ]:
+                    if (alg, dset, r) in done_cases:
+                        continue
 
                     xs_train, ys_train, xs_test, ys_test, y_train_mean, y_train_std = load_uci_dataset(dset, split=r)
                     y_mean, y_std, t = fn(xs_train, ys_train, xs_test, dset)
                     rmse, logp = metrics(ys_test, y_mean, y_std, y_train_mean, y_train_std)
-
+                    print(f'{alg} - time={t:4f}s, rmse={rmse:.4f}, log_likelihood={logp:.4f}')
+                    # print(y_mean, y_std)
                     results.append({
                         'alg': alg,
                         'dset': dset,
@@ -78,8 +108,12 @@ if __name__ == '__main__':
                         'rmse': rmse,
                         'logp': logp
                     })
+                    done_cases.add((alg, dset, r))
+
     except KeyboardInterrupt:
         pass
     finally:
         if len(results) > 0:
-            pd.DataFrame.from_records(results).to_csv('results/bnn_results_uci.csv')
+            df = pd.DataFrame.from_records(results)
+            df.sort_values(by=['dset', 'alg', 'set'], inplace=True)
+            df.to_csv(fname, index=False)

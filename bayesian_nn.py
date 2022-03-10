@@ -9,8 +9,8 @@ import jax.numpy as jnp
 import numpyro
 import numpyro.distributions as dist
 from numpyro.optim import Adagrad
-from numpyro.infer import Predictive, Trace_ELBO, init_to_uniform
-from numpyro.infer.autoguide import AutoDelta
+from numpyro.infer import Predictive, Trace_ELBO, RenyiELBO, init_to_uniform
+from numpyro.infer.autoguide import AutoDelta, AutoNormal
 
 from numpyro.contrib.einstein.steinvi import SteinVI
 from numpyro.contrib.einstein.kernels import RBFKernel
@@ -103,7 +103,8 @@ def metrics(ys_test, ys_pred_mean, ys_pred_std, y_data_mean=None, y_data_std=Non
     return rmse, logp
 
 
-def train_svgd(xs_train, ys_train, xs_test, hidden_dim=50, num_particles=20, num_steps=5000, subsample_size=100):
+def train_svgd(xs_train, ys_train, xs_test, hidden_dim=50, num_particles=20,
+               num_steps=5000, subsample_size=100, lr=1e-3):
     bnn_model = generate_bnn_model(hidden_dim=hidden_dim)
 
     inf_key, pred_key, data_key = random.split(random.PRNGKey(42), 3)
@@ -113,8 +114,8 @@ def train_svgd(xs_train, ys_train, xs_test, hidden_dim=50, num_particles=20, num
         model=bnn_model,
         guide=AutoDelta(bnn_model, init_loc_fn=partial(init_to_uniform, radius=0.1)),
         kernel_fn=RBFKernel(),
-        loss=Trace_ELBO(),
-        optim=Adagrad(0.05),
+        loss=RenyiELBO(alpha=0.9, num_particles=40),
+        optim=Adagrad(lr),
         num_particles=num_particles
     )
 
@@ -178,7 +179,7 @@ if __name__ == '__main__':
     ys = (ys - ys.mean()) / ys.std()
 
     y_mean, y_std, t = train_svgd(xs, ys, x_test, hidden_dim=hidden_dim, num_particles=200)
-    # y_mean, y_std, t = train_bbb(xs, ys, x_test, hidden_dim=hidden_dim, num_particles=200, num_epochs=1000, lr=0.1)
+    # y_mean, y_std, t = train_bbb(xs, ys, x_test, hidden_dim=hidden_dim, num_particles=200, num_steps=1000, lr=0.1)
     # y_mean, y_std, t = train_nuts(xs, ys, x_test, hidden_dim=hidden_dim, n_nuts=1000)
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -187,3 +188,5 @@ if __name__ == '__main__':
     ax.fill_between(x_test.flatten(), y_mean - y_std, y_mean + y_std, alpha=0.2)
 
     fig.savefig('figs/bayesian_nn_svi')
+
+
