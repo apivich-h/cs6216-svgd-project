@@ -116,4 +116,4 @@ if __name__ == '__main__':
                 'logp': logp
             })
 
-    pd.DataFrame.from_records(results).to_csv('results/logstic_results_dims.csv')
+    pd.DataFrame.from_records(results).to_csv('results/logistic_results_dims.csv')

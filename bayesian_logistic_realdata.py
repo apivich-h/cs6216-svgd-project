@@ -18,10 +18,11 @@ from numpyro.infer.hmc import NUTS, HMC
 from numpyro.infer.svi import SVI
 
 from data_covertype.covertype import read_benchmark, DSETS
+from svgd_original_logistic import train_original_svgd
 from bayesian_logistic import logistic_reg_model_generator, metrics
 
 
-def train_svgd(xs_train, ys_train, xs_test, ys_test, num_particles=100, steps=200):
+def train_svgd(xs_train, ys_train, xs_test, num_particles=100, steps=200):
     dim = xs_train.shape[1]
     model = logistic_reg_model_generator(dim, bias=True)
 
@@ -53,14 +54,11 @@ def train_svgd(xs_train, ys_train, xs_test, ys_test, num_particles=100, steps=20
     samples = pred(pred_key, xs_test)
     ws = samples['w'][0]
     bs = samples['b'][0]
-    ys_pred_logit = (xs_test @ ws.T + bs.reshape(1, -1).repeat(ys_test.shape[0], axis=0))
-    ys_pred = (1 / (1 + np.exp(-ys_pred_logit))).mean(axis=1)
-
-    acc, abs_acc, logp = metrics(ys_test, ys_pred)
-    return acc, abs_acc, logp, t
+    ys_pred_logit = (xs_test @ ws.T + bs.reshape(1, -1).repeat(xs_test.shape[0], axis=0))
+    return ys_pred_logit, t
 
 
-def train_nuts(xs_train, ys_train, xs_test, ys_test, n_nuts=1000):
+def train_nuts(xs_train, ys_train, xs_test, n_nuts=1000):
     dim = xs_train.shape[1]
     model = logistic_reg_model_generator(dim, bias=True)
 
@@ -77,23 +75,26 @@ def train_nuts(xs_train, ys_train, xs_test, ys_test, n_nuts=1000):
     samples = mcmc.get_samples()
     ws = samples['w']
     bs = samples['b']
-    ys_pred_logit = (xs_test @ ws.T + bs.reshape(1, -1).repeat(ys_test.shape[0], axis=0))
-    ys_pred = (1 / (1 + np.exp(-ys_pred_logit))).mean(axis=1)
-
-    acc, abs_acc, logp = metrics(ys_test, ys_pred)
-    return acc, abs_acc, logp, t
+    ys_pred_logit = (xs_test @ ws.T + bs.reshape(1, -1).repeat(xs_test.shape[0], axis=0))
+    return ys_pred_logit, t
 
 
 if __name__ == '__main__':
 
+    fname = 'results/logistic_results_realdata.csv'
     results = []
 
     for d in DSETS:
         for r in range(5):
             xs_train, ys_train, xs_test, ys_test = read_benchmark(d, r)
-            for alg, fn in [('svgd', train_svgd),
-                            ('nuts', train_nuts)]:
-                acc, abs_acc, logp, t = fn(xs_train, ys_train, xs_test, ys_test)
+            for alg, fn in [
+                ('svgd', train_svgd),
+                ('svgd_orig', train_original_svgd),
+                ('nuts', train_nuts),
+            ]:
+                ys_pred_logit, t = fn(xs_train, ys_train, xs_test)
+                ys_pred = (1 / (1 + np.exp(-ys_pred_logit))).mean(axis=1)
+                acc, abs_acc, logp = metrics(ys_test, ys_pred)
                 results.append({
                     'alg': alg,
                     'dset': d,
@@ -104,4 +105,4 @@ if __name__ == '__main__':
                     'logp': logp
                 })
 
-    pd.DataFrame.from_records(results).to_csv('results/logstic_results_realdata.csv')
+    pd.DataFrame.from_records(results).to_csv(fname)

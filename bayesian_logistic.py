@@ -102,8 +102,7 @@ if __name__ == '__main__':
 
     for step in steps_pic:
 
-        result = svgd.run(rng_key, step - steps_elapsed, xs, ys)
-        steps_elapsed = step
+        result = svgd.run(rng_key, step, xs, ys)
 
         pred = Predictive(
             model,
