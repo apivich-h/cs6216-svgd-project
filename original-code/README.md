@@ -1,4 +1,4 @@
-## Original Code Reference
+## Original Code Reference `Stein-Variational-Gradient-Descent`
 
 Copied from
 
@@ -29,3 +29,12 @@ To run `bayesian_nn.py`:
 pip install theano==0.8.2
 python3 bayesian_nn.py
 ```
+
+## Simple code using the original SVGD impl `Toy-Examples`
+
+Same dependencies and conda environment as previous.
+
+```
+python3 mixture1d.py
+```
+Then use the content of `mixture1d.csv` for visualization.
