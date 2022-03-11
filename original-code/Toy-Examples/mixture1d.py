@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     # plot
     plt.clf()
-    iter_hist = plt.hist(x_after, 100, density=True, stacked=True)
+    iter_hist = plt.hist(x_after, 20, density=True, stacked=True)
     model.plotpdf()
 
     plt.savefig(f"mixture1d_iter_{0}.png")
@@ -60,14 +60,14 @@ if __name__ == '__main__':
     check_iters = [50, 75, 100, 150, 500]
 
     for i in range(5):
-        x_after = SVGD().update(x0, model.dlnprob, n_iter=check_iters[i], stepsize=0.1)
+        x_after = SVGD().update(x0, model.dlnprob, n_iter=check_iters[i], stepsize=0.25)
         print(f"svgd ({check_iters[i]}th iteration): ", np.mean(x_after,axis=0))
         np.savetxt(os.path.join(os.path.dirname(__file__), f"mixture1d_iter_{check_iters[i]}.csv"), x_after, delimiter=",")
         print("Copy csv data to here for histogram: https://statscharts.com/bar/histogram?status=edit")
 
         # plot
         plt.clf()
-        iter_hist = plt.hist(x_after, 100, density=True, stacked=True)
+        iter_hist = plt.hist(x_after, 20, density=True, stacked=True)
         model.plotpdf()
 
         plt.savefig(f"mixture1d_iter_{check_iters[i]}.png")
