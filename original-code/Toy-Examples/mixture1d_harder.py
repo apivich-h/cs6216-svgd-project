@@ -37,10 +37,20 @@ class Mixture1d:
         curve = self.w1 * curve_0 + self.w2 * curve_1
         iter_pdf = plt.plot(x, curve, lw=2)
 
+def assertions():
+    model = Mixture1d(1/3, -2, 1, 2/3, 2, 1)
+    almost_eq = lambda  x, y: abs(x - y) < 1e-5
+    assert almost_eq(model.dlnprob_single(1), 0.963701)
+    assert almost_eq(model.dlnprob_single(2), -0.000670813)
+    assert almost_eq(model.dlnprob_single(-1), -0.858653)
+    assert almost_eq(model.dlnprob_single(-2), 0.0026819)
+
 if __name__ == '__main__':
+    assertions()
+
     w1 = 1/3
-    mu1 = -2.0
-    mu2 = 2.0
+    mu1 = -3.0
+    mu2 = 3.0
     w2 = 2/3
     sigma1 = 1.0
     sigma2 = 1.0
@@ -48,37 +58,30 @@ if __name__ == '__main__':
     
     x0 = np.random.normal(-10,1,[100,1])
     x_after = x0
-
-    print(f"svgd ({0}th iteration): ", np.mean(x_after,axis=0))
-    np.savetxt(os.path.join(os.path.dirname(__file__), f"mixture1d_iter_{0}.csv"), x_after, delimiter=",")
-    print("Copy csv data to here for histogram: https://statscharts.com/bar/histogram?status=edit")
-
-    # plot
-    plt.clf()
-    iter_hist = plt.hist(x_after, 20, density=True, stacked=True)
-    model.plotpdf()
-
-    plt.savefig(f"mixture1d_iter_{0}.png")
-    plt.show()
-
-    check_iters = [50, 75, 100, 150, 500]
-
-    for i in range(5):
-        x_after = SVGD().update(x0, model.dlnprob, n_iter=check_iters[i], stepsize=0.25)
-        print(f"svgd ({check_iters[i]}th iteration): ", np.mean(x_after,axis=0))
-        np.savetxt(os.path.join(os.path.dirname(__file__), f"mixture1d_iter_{check_iters[i]}.csv"), x_after, delimiter=",")
-        print("Copy csv data to here for histogram: https://statscharts.com/bar/histogram?status=edit")
-
-        # plot
-        plt.clf()
-        iter_hist = plt.hist(x_after, 20, density=True, stacked=True)
-        model.plotpdf()
-
-        plt.savefig(f"mixture1d_iter_{check_iters[i]}.png")
-        plt.show()
-
-    # xafter = SVGD().update(x0, model.dlnprob, n_iter=4000, stepsize=0.01)
     
-    # print("svgd: ", np.mean(xafter,axis=0))
-    # np.savetxt(os.path.join(os.path.dirname(__file__), "mixture1d.csv"), xafter, delimiter=",")
-    # print("Copy csv data to here for histogram: https://statscharts.com/bar/histogram?status=edit")
+    total_iter = 64000
+    step_size = 0.05
+    check_iters = [6400*x for x in list(range(1,21))]
+    print(check_iters)
+
+    os.system("rm -rf ./output/*.csv")
+    os.system("rm -rf ./output/*.png")
+
+    def save_on_check_iter_func(iter_idx, theta):
+        if iter_idx in check_iters:
+            print(f"svgd ({iter_idx}th iteration): ", np.mean(theta,axis=0))
+            np.savetxt(os.path.join(os.path.dirname(__file__), f"./output/mixture1d_harder_iter_{iter_idx}.csv"), x_after, delimiter=",")
+            print("Copy csv data to here for histogram: https://statscharts.com/bar/histogram?status=edit")
+
+            # plot
+            plt.clf()
+            iter_hist = plt.hist(theta, 20, density=True, stacked=True)
+            model.plotpdf()
+
+            plt.savefig(f"./output/mixture1d_harder_iter_{iter_idx}.png")
+            # plt.show()
+
+    save_on_check_iter_func(0, x_after)
+
+    x_after = SVGD().update(x0, model.dlnprob, n_iter=total_iter, stepsize=step_size, callback=save_on_check_iter_func)
+        
