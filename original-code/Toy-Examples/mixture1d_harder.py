@@ -6,6 +6,8 @@ import os
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 
+np.random.seed(5432)
+
 class Mixture1d:
     def __init__(self, w1, mu1, sigma1, w2, mu2, sigma2):
         self.w1 = w1
@@ -59,9 +61,10 @@ if __name__ == '__main__':
     x0 = np.random.normal(-10,1,[100,1])
     x_after = x0
     
-    total_iter = 64000
+    total_iter = 128000
     step_size = 0.05
     check_iters = [6400*x for x in list(range(1,21))]
+    histo_bin_count = 10
     print(check_iters)
 
     os.system("rm -rf ./output/*.csv")
@@ -75,7 +78,7 @@ if __name__ == '__main__':
 
             # plot
             plt.clf()
-            iter_hist = plt.hist(theta, 20, density=True, stacked=True)
+            iter_hist = plt.hist(theta, histo_bin_count, density=True, stacked=True)
             model.plotpdf()
 
             plt.savefig(f"./output/mixture1d_harder_iter_{iter_idx}.png")
