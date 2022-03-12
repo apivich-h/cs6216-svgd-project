@@ -5,8 +5,6 @@ import math
 from mixture1d import Mixture1d
 from svgd import SVGD
 
-np.random.seed(5432)
-
 W1 = 1/3
 W2 = 2/3
 MU1 = -2
@@ -14,7 +12,8 @@ MU2 = 2
 SIG1 = 1
 SIG2 = 1
 
-EXPERIMENT_REPEAT = 20
+EXPERIMENT_REPEAT = 100
+COS_PARAM_REPEAT = 20
 
 def MSE(Y, TY):
   return np.square(np.array(Y) - np.array(TY)).mean()
@@ -63,47 +62,114 @@ sample_function_dict = {
 }
 
 # %%
+sample_cache = {}
+
+def add_sample_in_cache(method, sample_size, sample):
+  global sample_cache
+  if method not in sample_cache: sample_cache[method] = {}
+  method_sample_dict = sample_cache[method] 
+  if sample_size not in method_sample_dict:
+    method_sample_dict[sample_size] = []
+  print(f"# add_sample_in_cache  method={method} sample_size={sample_size} sample_idx={len(method_sample_dict[sample_size])}")
+  method_sample_dict[sample_size].append(sample)
+
+def repeat_sample_add(sample_method,  sample_size, times):
+    sample_func = sample_function_dict[sample_method]
+    for i in range(times): add_sample_in_cache(sample_method, sample_size, sample_func(sample_size))
+
+def dump_cache(method, sample_size):
+  print("----- dump sample cache: ", method, sample_size)
+  fname = f"./output/sample_cache_{method}_{sample_size}.csv"
+  np.savetxt(fname, sample_cache[method][sample_size])
+
+np.random.seed(5433)
+for sample_size in experiment_sample_sizes:
+  repeat_sample_add("MC", sample_size, 100 * 20)
+  dump_cache("MC", sample_size)
+  repeat_sample_add("SVGD", sample_size, 100 * 20)
+  dump_cache("SVGD", sample_size)
+
+
+# %%
+
+np.random.seed(5432)
+def next_sample_getter_gen(method):
+  idx = 0
+  def _next_sample_getter(sample_size):
+    nonlocal idx
+    result = sample_cache[method][sample_size][idx]
+    idx += 1
+    return result
+  return _next_sample_getter
+
 all_result_dict = {}
+
+def repeat_exp_get_mse(next_sample_getter, sample_size, using_est_function, expected_mean):
+  repeat_experiment_emp_list = []
+  repeat_experiment_expected_list = [expected_mean for i in range(EXPERIMENT_REPEAT)]
+  for i in range(EXPERIMENT_REPEAT):
+    sample = next_sample_getter(sample_size)
+    estimation = np.mean(using_est_function(sample))
+    repeat_experiment_emp_list.append(estimation)
+  assert len(repeat_experiment_emp_list) == EXPERIMENT_REPEAT and len(repeat_experiment_expected_list) == EXPERIMENT_REPEAT
+  mse = MSE(repeat_experiment_emp_list, repeat_experiment_expected_list)
+  return mse
+
+print ("=============== get sample & calculate & plot ===============")
 for est_func_name in est_function_dict:
   est_function = est_function_dict[est_func_name]
   est_true_function = est_true_value_dict[est_func_name]
   all_result_dict[est_func_name] = {}
 
   for sample_type in sample_function_dict:
-    sample_func = sample_function_dict[sample_type]
+    sample_getter = next_sample_getter_gen(sample_type)
     all_result_dict[est_func_name][sample_type] = []
     results_list = all_result_dict[est_func_name][sample_type]
+
     for sample_size in experiment_sample_sizes:
       repeat_experiment_emp_list = []
       repeat_experiment_expected_list = []
-      for i in range(EXPERIMENT_REPEAT):
-        est_true_val = None
-        if est_func_name == "E[cos(wx+b)]":
+
+      if est_func_name == "E[cos(wx+b)]":
+        mse_list = []
+        for j in range(COS_PARAM_REPEAT):
           w = np.random.normal(0, 1)
           b = np.random.uniform(0, 2 * math.pi)
           using_est_function = est_function(w, b)
           est_true_val = est_true_function(w, b)
-        else:
-          using_est_function = est_function
-          est_true_val = est_true_function()
-        sample = sample_func(sample_size)
-        estimation = np.mean(using_est_function(sample))
-        repeat_experiment_emp_list.append(estimation)
-        repeat_experiment_expected_list.append(est_true_val)
+          mse = repeat_exp_get_mse(sample_getter, sample_size, using_est_function, est_true_val)
+          print(f"calculate estimator (PARAM idx={j} w={w}, b={b}) MSE:", mse, " sample_size:", sample_size, " sample_type:", sample_type, " est_func_name:", est_func_name)
+          mse_list.append(mse)
+        mean_mse = np.mean(mse_list)
+        print(f"calculate estimator (PARAM MEAN) MSE:", mean_mse, " sample_size:", sample_size, " sample_type:", sample_type, " est_func_name:", est_func_name)
+        
 
-      assert len(repeat_experiment_emp_list) == EXPERIMENT_REPEAT \
-        and len(repeat_experiment_expected_list) == EXPERIMENT_REPEAT
-
-      mse = MSE(repeat_experiment_emp_list, repeat_experiment_expected_list)
-      print("calculate estimator MSE:", mse, " sample_size:", sample_size, " sample_type:", sample_type, " est_func_name:", est_func_name)
-      results_list.append([sample_size, mse])
+      else:
+        using_est_function = est_function
+        est_true_val = est_true_function()
+        mse = repeat_exp_get_mse(sample_getter, sample_size, using_est_function, est_true_val)
+        print("calculate estimator (ONCE) MSE:", mse, " sample_size:", sample_size, " sample_type:", sample_type, " est_func_name:", est_func_name)
+        results_list.append([sample_size, mse])
 
 # %%
 import json
-with open("./output/mixture_fig2.json", 'w') as f:
-  f.write(json.dumps(all_result_dict, indent=2))
+with open("./output/mixture_fig2.json", 'r') as f:
+  all_result_dict = json.load(f)
 
-# %%
-import matplotlib
+import matplotlib.pyplot as plt
+fig_keys = list(est_true_value_dict.keys())
+num_plots = len(fig_keys)
+fig = plt.figure(figsize=(4 * num_plots, 4))
+axs = fig.subplots(nrows=1, ncols=num_plots, sharex=True, sharey=False)
+for i, key in enumerate(fig_keys):
+  estimate_dict = all_result_dict[key]
+  ax = axs[i]
+  ax.set_title(f'Estimating {key}')
+  ax.set_yscale('log')
+  for method_key in estimate_dict:
+    estimate_mse_data = estimate_dict[method_key]
+    X, Y = np.array(estimate_mse_data).T
+    ax.plot(X, Y)
 
+fig.savefig('./output/figure2.png')
 # %%
