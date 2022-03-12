@@ -113,7 +113,7 @@ if __name__ == '__main__':
             ax.plot(theta, np.full_like(theta, -0.01), '|k', markeredgewidth=1)
 
 
-    save_on_check_iter_func = save_on_check_iter_func1
+    save_on_check_iter_func = save_on_check_iter_func2
     save_on_check_iter_func(0, x_after)
     x_after = SVGD().update(x0, model.dlnprob, n_iter=check_iters[-1], stepsize=step_size, callback=save_on_check_iter_func)
     if save_on_check_iter_func == save_on_check_iter_func2:
