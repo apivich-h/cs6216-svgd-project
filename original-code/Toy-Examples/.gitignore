@@ -1,3 +1,4 @@
 mixture1d.csv
 output/*.csv
 output/*.png
+*.tar.gz

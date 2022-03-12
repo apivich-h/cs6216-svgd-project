@@ -82,20 +82,42 @@ def dump_cache(method, sample_size):
   fname = f"./output/sample_cache_{method}_{sample_size}.csv"
   np.savetxt(fname, sample_cache[method][sample_size])
 
-np.random.seed(5433)
-for sample_size in experiment_sample_sizes:
-  repeat_sample_add("MC", sample_size, 100 * 20)
-  dump_cache("MC", sample_size)
-  repeat_sample_add("SVGD", sample_size, 100 * 20)
-  dump_cache("SVGD", sample_size)
-
+REDO_SAMPLING = False
+if REDO_SAMPLING:
+  np.random.seed(5433)
+  for sample_size in experiment_sample_sizes:
+    repeat_sample_add("MC", sample_size, 100 * 20)
+    dump_cache("MC", sample_size)
+    repeat_sample_add("SVGD", sample_size, 100 * 20)
+    dump_cache("SVGD", sample_size)
+else:
+  for method in sample_function_dict:
+    for sample_size in experiment_sample_sizes:
+      print("----- loading sample cache: ", method, sample_size)
+      fname = f"./output/sample_cache_{method}_{sample_size}.csv"
+      data = np.loadtxt(fname)
+      if method not in sample_cache: sample_cache[method] = {}
+      if sample_size not in sample_cache[method]: sample_cache[method][sample_size] = []
+      sample_cache[method][sample_size] = [x for x in data]
+  import sys
+  if "samplemore" in sys.argv:
+    np.random.seed(5434)
+    for sample_size in experiment_sample_sizes:
+      repeat_sample_add("MC", sample_size, 100 * 20)
+      dump_cache("MC", sample_size)
+      repeat_sample_add("SVGD", sample_size, 100 * 20)
+      dump_cache("SVGD", sample_size)
 
 # %%
 
+EXPERIMENT_REPEAT = 100
+COS_PARAM_REPEAT = 20
+
 np.random.seed(5432)
-def next_sample_getter_gen(method):
+def next_sample_getter_gen(method, expected_sample_size):
   idx = 0
   def _next_sample_getter(sample_size):
+    assert sample_size == expected_sample_size
     nonlocal idx
     result = sample_cache[method][sample_size][idx]
     idx += 1
@@ -122,11 +144,11 @@ for est_func_name in est_function_dict:
   all_result_dict[est_func_name] = {}
 
   for sample_type in sample_function_dict:
-    sample_getter = next_sample_getter_gen(sample_type)
     all_result_dict[est_func_name][sample_type] = []
     results_list = all_result_dict[est_func_name][sample_type]
 
     for sample_size in experiment_sample_sizes:
+      sample_getter = next_sample_getter_gen(sample_type, sample_size)
       repeat_experiment_emp_list = []
       repeat_experiment_expected_list = []
 
@@ -142,14 +164,17 @@ for est_func_name in est_function_dict:
           mse_list.append(mse)
         mean_mse = np.mean(mse_list)
         print(f"calculate estimator (PARAM MEAN) MSE:", mean_mse, " sample_size:", sample_size, " sample_type:", sample_type, " est_func_name:", est_func_name)
-        
-
+        results_list.append([sample_size, mean_mse])
       else:
         using_est_function = est_function
         est_true_val = est_true_function()
         mse = repeat_exp_get_mse(sample_getter, sample_size, using_est_function, est_true_val)
         print("calculate estimator (ONCE) MSE:", mse, " sample_size:", sample_size, " sample_type:", sample_type, " est_func_name:", est_func_name)
         results_list.append([sample_size, mse])
+
+import json
+with open("./output/mixture_fig2.json", 'w') as f:
+  json.dump(all_result_dict, f, indent=2)
 
 # %%
 import json
@@ -166,10 +191,17 @@ for i, key in enumerate(fig_keys):
   ax = axs[i]
   ax.set_title(f'Estimating {key}')
   ax.set_yscale('log')
+  ax.set_xscale('log')
   for method_key in estimate_dict:
     estimate_mse_data = estimate_dict[method_key]
     X, Y = np.array(estimate_mse_data).T
     ax.plot(X, Y)
+  ax.legend(list(estimate_dict.keys()))
 
-fig.savefig('./output/figure2.png')
+outfigpath1 = './output/figure2.png'
+outfigpath2 = '../../figs/toy-figure2.png'
+print("saving fig to:", outfigpath1)
+fig.savefig(outfigpath1)
+print("saving fig to:", outfigpath2)
+fig.savefig(outfigpath2)
 # %%
