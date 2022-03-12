@@ -184,7 +184,7 @@ with open("./output/mixture_fig2.json", 'r') as f:
 import matplotlib.pyplot as plt
 fig_keys = list(est_true_value_dict.keys())
 num_plots = len(fig_keys)
-fig = plt.figure(figsize=(4 * num_plots, 4))
+fig = plt.figure(figsize=(4 * num_plots, 3))
 axs = fig.subplots(nrows=1, ncols=num_plots, sharex=True, sharey=False)
 for i, key in enumerate(fig_keys):
   estimate_dict = all_result_dict[key]

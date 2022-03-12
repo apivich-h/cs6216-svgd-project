@@ -36,7 +36,14 @@ class Mixture1d:
         curve_0 = norm.pdf(x, self.mu1, self.sigma1)
         curve_1 = norm.pdf(x, self.mu2, self.sigma2)
         curve = self.w1 * curve_0 + self.w2 * curve_1
-        iter_pdf = plt.plot(x, curve, lw=2)
+        plt.plot(x, curve, lw=2)
+    
+    def axplotpdf(self, ax):
+        x = np.linspace(-14, 14, 100)
+        curve_0 = norm.pdf(x, self.mu1, self.sigma1)
+        curve_1 = norm.pdf(x, self.mu2, self.sigma2)
+        curve = self.w1 * curve_0 + self.w2 * curve_1
+        ax.plot(x, curve, lw=2)
 
 if __name__ == '__main__':
     np.random.seed(5432)
@@ -55,7 +62,7 @@ if __name__ == '__main__':
     step_size = 0.25
     check_iters = [0, 50, 75, 100, 150, 500]
 
-    def save_on_check_iter_func(iter_idx, theta):
+    def save_on_check_iter_func1(iter_idx, theta):
         if iter_idx in check_iters:
             print(f"svgd ({iter_idx}th iteration): ", np.mean(theta,axis=0))
             np.savetxt(os.path.join(os.path.dirname(__file__), f"./mixture1d_iter_{iter_idx}.csv"), theta, delimiter=",")
@@ -76,7 +83,45 @@ if __name__ == '__main__':
 
             plt.savefig(f"./mixture1d_iter_{iter_idx}.png")
             # plt.show()
-    
+
+    fig = None
+    axs = None
+    def save_on_check_iter_func2(iter_idx, theta):
+        global fig
+        global axs
+        if fig is None: 
+            fig = plt.figure(figsize=(4 * len(check_iters), 4))
+            axs = fig.subplots(nrows=1, ncols=len(check_iters), sharex=True, sharey=False)
+        if iter_idx in check_iters:
+            idx = check_iters.index(iter_idx)
+            ax = axs[idx]
+            ax.set_title(f'{iter_idx}th Iteration')
+            ax.set_xlim([-14, 14])
+            ax.set_ylim([0, 0.4])
+            
+            print(f"svgd ({iter_idx}th iteration): ", np.mean(theta, axis=0))
+            np.savetxt(os.path.join(os.path.dirname(__file__), f"./mixture1d_iter_{iter_idx}.csv"), theta, delimiter=",")
+
+            model.axplotpdf(ax)
+            # taken from https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
+            kde = KernelDensity(bandwidth=0.5, kernel='gaussian')
+            kde.fit(theta)
+            theta_mesh = np.linspace(-14, 14, 100)
+            logprob = kde.score_samples(theta_mesh[:, None])
+
+            ax.fill_between(theta_mesh, np.exp(logprob), alpha=0.5)
+            ax.plot(theta, np.full_like(theta, -0.01), '|k', markeredgewidth=1)
+
+
+    save_on_check_iter_func = save_on_check_iter_func1
     save_on_check_iter_func(0, x_after)
     x_after = SVGD().update(x0, model.dlnprob, n_iter=check_iters[-1], stepsize=step_size, callback=save_on_check_iter_func)
-        
+    if save_on_check_iter_func == save_on_check_iter_func2:
+        plt.savefig(f"./mixture1d_all.png")
+
+# %%
+# import numpy as np
+# data = np.loadtxt("./mixture1d_iter_500.csv")
+# print(np.mean(data))
+
+# %%
