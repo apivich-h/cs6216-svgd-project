@@ -11,6 +11,7 @@ MU1 = -2
 MU2 = 2
 SIG1 = 1
 SIG2 = 1
+step_size = 0.15
 
 EXPERIMENT_REPEAT = 100
 COS_PARAM_REPEAT = 20
@@ -53,7 +54,7 @@ def mc_sample(sample_size):
 def svgd_sample(sample_size):
   model = Mixture1d(W1, MU1, SIG1, W2, MU2, SIG2)
   x0 = np.random.normal(-10,1,[sample_size,1])
-  x_after = SVGD().update(x0, model.dlnprob, n_iter=500, stepsize=0.25)
+  x_after = SVGD().update(x0, model.dlnprob, n_iter=500, stepsize=step_size)
   return x_after.flatten()
 
 sample_function_dict = {
@@ -79,10 +80,11 @@ def repeat_sample_add(sample_method,  sample_size, times):
 
 def dump_cache(method, sample_size):
   print("----- dump sample cache: ", method, sample_size)
-  fname = f"./output/sample_cache_{method}_{sample_size}.csv"
+  fname = f"./output/sample_cache_{step_size}_{method}_{sample_size}.csv"
   np.savetxt(fname, sample_cache[method][sample_size])
 
-REDO_SAMPLING = False
+import sys
+REDO_SAMPLING = "redo_sampling" in sys.argv
 if REDO_SAMPLING:
   np.random.seed(5433)
   for sample_size in experiment_sample_sizes:
@@ -96,32 +98,38 @@ if REDO_SAMPLING:
     dump_cache("MC", sample_size)
     repeat_sample_add("SVGD", sample_size, 100 * 20)
     dump_cache("SVGD", sample_size)
+  np.random.seed(5435)
+  for sample_size in experiment_sample_sizes:
+    repeat_sample_add("MC", sample_size, 200 * 20)
+    dump_cache("MC", sample_size)
+    repeat_sample_add("SVGD", sample_size, 200 * 20)
+    dump_cache("SVGD", sample_size)
 else:
   for method in sample_function_dict:
     for sample_size in experiment_sample_sizes:
       print("----- loading sample cache: ", method, sample_size)
-      fname = f"./output/sample_cache_{method}_{sample_size}.csv"
+      fname = f"./output/sample_cache_{step_size}_{method}_{sample_size}.csv"
       data = np.loadtxt(fname)
       if method not in sample_cache: sample_cache[method] = {}
       if sample_size not in sample_cache[method]: sample_cache[method][sample_size] = []
       sample_cache[method][sample_size] = [x for x in data]
-  import sys
   if "samplemore" in sys.argv:
-    np.random.seed(5435)
-    for sample_size in experiment_sample_sizes:
-      repeat_sample_add("MC", sample_size, 200 * 20)
-      dump_cache("MC", sample_size)
-      repeat_sample_add("SVGD", sample_size, 200 * 20)
-      dump_cache("SVGD", sample_size)
-
+    raise NotImplementedError
 # %%
 
-EXPERIMENT_REPEAT = 200
+EXPERIMENT_REPEAT = 400
 COS_PARAM_REPEAT = 20
+np.random.seed(5400)
 
-np.random.seed(5432)
+# def shuffle_all():
+#   print("shuffle_all.")
+#   for method in sample_function_dict:
+#     np.random.shuffle(sample_cache[method][sample_size])
+# shuffle_all()
+
 def next_sample_getter_gen(method, expected_sample_size):
   idx = 0
+  np.random.shuffle(sample_cache[method][sample_size])
   def _next_sample_getter(sample_size):
     assert sample_size == expected_sample_size
     nonlocal idx
@@ -201,7 +209,7 @@ for i, key in enumerate(fig_keys):
   for method_key in estimate_dict:
     estimate_mse_data = estimate_dict[method_key]
     X, Y = np.array(estimate_mse_data).T
-    ax.plot(X, Y)
+    ax.plot(X, Y,  marker='o')
   ax.legend(list(estimate_dict.keys()))
 
 outfigpath1 = './output/figure2.png'
