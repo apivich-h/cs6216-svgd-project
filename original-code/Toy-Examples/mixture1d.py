@@ -5,6 +5,7 @@ import math
 import os
 import matplotlib.pyplot as plt
 from scipy.stats import norm
+from sklearn.neighbors import KernelDensity
 
 class Mixture1d:
     def __init__(self, w1, mu1, sigma1, w2, mu2, sigma2):
@@ -31,13 +32,21 @@ class Mixture1d:
         return vfunc(points)
 
     def plotpdf(self):
-        x = np.linspace(-10, 10, 100)
+        x = np.linspace(-14, 14, 100)
         curve_0 = norm.pdf(x, self.mu1, self.sigma1)
         curve_1 = norm.pdf(x, self.mu2, self.sigma2)
         curve = self.w1 * curve_0 + self.w2 * curve_1
-        iter_pdf = plt.plot(x, curve, lw=2)
+        plt.plot(x, curve, lw=2)
+    
+    def axplotpdf(self, ax):
+        x = np.linspace(-14, 14, 100)
+        curve_0 = norm.pdf(x, self.mu1, self.sigma1)
+        curve_1 = norm.pdf(x, self.mu2, self.sigma2)
+        curve = self.w1 * curve_0 + self.w2 * curve_1
+        ax.plot(x, curve, lw=2)
 
 if __name__ == '__main__':
+    np.random.seed(5432)
     w1 = 1/3
     mu1 = -2.0
     mu2 = 2.0
@@ -49,36 +58,70 @@ if __name__ == '__main__':
     x0 = np.random.normal(-10,1,[100,1])
     x_after = x0
 
-    print(f"svgd ({0}th iteration): ", np.mean(x_after,axis=0))
-    np.savetxt(os.path.join(os.path.dirname(__file__), f"mixture1d_iter_{0}.csv"), x_after, delimiter=",")
-    print("Copy csv data to here for histogram: https://statscharts.com/bar/histogram?status=edit")
+    histo_bin_count = 20
+    step_size = 0.25
+    check_iters = [0, 50, 75, 100, 150, 500]
 
-    # plot
-    plt.clf()
-    iter_hist = plt.hist(x_after, 20, density=True, stacked=True)
-    model.plotpdf()
+    def save_on_check_iter_func1(iter_idx, theta):
+        if iter_idx in check_iters:
+            print(f"svgd ({iter_idx}th iteration): ", np.mean(theta,axis=0))
+            np.savetxt(os.path.join(os.path.dirname(__file__), f"./mixture1d_iter_{iter_idx}.csv"), theta, delimiter=",")
 
-    plt.savefig(f"mixture1d_iter_{0}.png")
-    plt.show()
+            # plot
+            plt.clf()
+            model.plotpdf()
+            # taken from https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
+            # instantiate and fit the KDE model
+            kde = KernelDensity(bandwidth=0.5, kernel='gaussian')
+            kde.fit(theta)
+            theta_mesh = np.linspace(-14, 14, 100)
+            # score_samples returns the log of the probability density
+            logprob = kde.score_samples(theta_mesh[:, None])
 
-    check_iters = [50, 75, 100, 150, 500]
+            plt.fill_between(theta_mesh, np.exp(logprob), alpha=0.5)
+            plt.plot(theta, np.full_like(theta, -0.01), '|k', markeredgewidth=1)
 
-    for i in range(5):
-        x_after = SVGD().update(x0, model.dlnprob, n_iter=check_iters[i], stepsize=0.25)
-        print(f"svgd ({check_iters[i]}th iteration): ", np.mean(x_after,axis=0))
-        np.savetxt(os.path.join(os.path.dirname(__file__), f"mixture1d_iter_{check_iters[i]}.csv"), x_after, delimiter=",")
-        print("Copy csv data to here for histogram: https://statscharts.com/bar/histogram?status=edit")
+            plt.savefig(f"./mixture1d_iter_{iter_idx}.png")
+            # plt.show()
 
-        # plot
-        plt.clf()
-        iter_hist = plt.hist(x_after, 20, density=True, stacked=True)
-        model.plotpdf()
+    fig = None
+    axs = None
+    def save_on_check_iter_func2(iter_idx, theta):
+        global fig
+        global axs
+        if fig is None: 
+            fig = plt.figure(figsize=(4 * len(check_iters), 4))
+            axs = fig.subplots(nrows=1, ncols=len(check_iters), sharex=True, sharey=False)
+        if iter_idx in check_iters:
+            idx = check_iters.index(iter_idx)
+            ax = axs[idx]
+            ax.set_title(f'{iter_idx}th Iteration')
+            ax.set_xlim([-14, 14])
+            ax.set_ylim([0, 0.4])
+            
+            print(f"svgd ({iter_idx}th iteration): ", np.mean(theta, axis=0))
+            np.savetxt(os.path.join(os.path.dirname(__file__), f"./mixture1d_iter_{iter_idx}.csv"), theta, delimiter=",")
 
-        plt.savefig(f"mixture1d_iter_{check_iters[i]}.png")
-        plt.show()
+            model.axplotpdf(ax)
+            # taken from https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
+            kde = KernelDensity(bandwidth=0.5, kernel='gaussian')
+            kde.fit(theta)
+            theta_mesh = np.linspace(-14, 14, 100)
+            logprob = kde.score_samples(theta_mesh[:, None])
 
-    # xafter = SVGD().update(x0, model.dlnprob, n_iter=4000, stepsize=0.01)
-    
-    # print("svgd: ", np.mean(xafter,axis=0))
-    # np.savetxt(os.path.join(os.path.dirname(__file__), "mixture1d.csv"), xafter, delimiter=",")
-    # print("Copy csv data to here for histogram: https://statscharts.com/bar/histogram?status=edit")
+            ax.fill_between(theta_mesh, np.exp(logprob), alpha=0.5)
+            ax.plot(theta, np.full_like(theta, -0.01), '|k', markeredgewidth=1)
+
+
+    save_on_check_iter_func = save_on_check_iter_func2
+    save_on_check_iter_func(0, x_after)
+    x_after = SVGD().update(x0, model.dlnprob, n_iter=check_iters[-1], stepsize=step_size, callback=save_on_check_iter_func)
+    if save_on_check_iter_func == save_on_check_iter_func2:
+        plt.savefig(f"./mixture1d_all.png")
+
+# %%
+# import numpy as np
+# data = np.loadtxt("./mixture1d_iter_500.csv")
+# print(np.mean(data))
+
+# %%
