@@ -3,36 +3,42 @@ In this section, we report our reproduction effort and verification of the exper
 
 \subsection{Toy Example}
 
-We first reproduced the toy example about 1D Gaussian mixture mentioned in the paper. 
+We first reproduced the toy example about 1D Gaussian mixture mentioned in the paper. The task is to use SVGD to approximate a target distribution with PDF $p(x) = \frac{1}{3} N(x; -2, 1) + \frac{1}{3} N(x; 2, 1)$. The particles are initialized by an i.i.d. sample from the distribution $N(-10, 1)$, which is far away from the mode of the target distribution. We use 100 particles and 500 iterations with step size 0.25. 
+
+As shown in figure \ref{fig:toy1dgaussian-1}, SVGD effectively recovered the distribution.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{original-code/Toy-Examples/mixture1d_iter_500.png}
-    \caption{Toy example with 1D Gaussian mixture}
-    \label{fig:my_label}
+    \caption{Toy example with 1D Gaussian mixture. Particles are visualized by KDE.}
+    \label{fig:toy1dgaussian-1}
 \end{figure}
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{figs/toy-figure2.png}
-    \caption{Comparison between MC and SVGD on simple mean estimation tasks}
+    \caption{Comparison between MC and SVGD on simple mean estimation tasks. }
     \label{fig:my_label}
 \end{figure}
 
 \subsection{Bayesian Logistic Regression}
 
+We attempt to test the SVGD algorithm in small-scale logistic regression tasks. We aim to construct a model which is able to predict a binary label of some training data. We run the SVGD algorithm as implemented on NumPyro against the No U-Turn Sampler (NUTS) algorithm. We model the logistic regression problem as a model in NumPyro, and simply perform inference on them but using NUTS and SVGD. The result is shown in Figure \ref{fig:logist_small}.
+
+
+
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{figs/logistic_svgd_nuts.png}
     \caption{Caption}
-    \label{fig:my_label}
+    \label{fig:logist_small}
 \end{figure}
 
 \subsection{Bayesian Neural Network}
 
 A Bayesian Neural Network (BNN) is a neural network where 
 
-For the experiments, we train a small BNN on a set of regression tasks. We follow the setup from the paper and use the UCI dataset. We run tests on the SVGD algorithm as implemented by the authors of the original paper and also the implementation on NumPyro, and also on the probabilistic back-propagation (PBP) algorithm. A change that we made was to run each algorithms using the same batch size and the same number of epochs ran across all of the tests.
+For the experiments, we train a small BNN on a set of regression tasks. We follow the setup from the paper and use the UCI dataset. We run tests on the SVGD algorithm as implemented by the authors of the original paper and also the implementation on NumPyro, and also on the probabilistic back-propagation (PBP) algorithm. A change that we made was to run each algorithms using the same subsaming size of 100 and ran each algorithms for up to 500 epochs. The other hyperparameters were kept the same as the original code. We report the results in Tables \ref{tab:bnn_rmse} and . 
 
 \begin{table}[]
     \centering
@@ -51,11 +57,11 @@ wine & $0.640 \pm 0.015$ & $0.666 \pm 0.013$ & $0.634 \pm 0.014$ \\
 yacht & $0.948 \pm 0.087$ & $1.719 \pm 0.101$ & $1.017 \pm 0.141$ \\
 \hline
 \end{tabular}
-    \caption{Caption}
-    \label{tab:my_label}
+    \caption{Root-mean-squared error (RMSE) on test data for each algorithms} 
+    \label{tab:bnn_rmse}
 \end{table}
 
-In our results, we found that the SVGD algorithm was not able to exactly matc
+In our results, we were able to replicate the superior performance of the SVGD algorith
 
 \begin{figure}[h]
     \centering
