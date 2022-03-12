@@ -1,11 +1,28 @@
 \section{Summary of the Paper}
 
-\paragraph{Stein Variation Gradient Descent (SVGD) Algorithm.}
+\paragraph{Stein Variation Gradient Descent (SVGD) Algorithm.} We first present the pseudocode of the algorithm. We then summarize the author's justification for the algorithm design. We finally explain our takeaway of the extreme case, scalability, and performance of the algorithm.
+
+
+\begin{algorithm}[t!]
+	\caption{Bayesian Inference via Variational Gradient Descent~\cite{ref_article_svgd}}
+	\label{alg:svgd}
+	\begin{algorithmic}
+		\STATE {\bfseries Input:} A target distribution with density function $p(x)$ and a set of initial particles $\{x_i^0\}_{i=1}^n$.
+		\STATE{\bfseries Output:} A set of particles $\{x_i\}_{i=1}^n$ that approximates the target distribution.
+		\FOR {iteration $\ell$}
+		\STATE{$x_i^{\ell+1}\leftarrow x_i^l + \epsilon_l \hat{\mathbf{\phi}}^*(x_i^\ell)$,
+		
+		where $\hat{\mathbf{\phi}}^*(x_i^\ell) = \frac{1}{n} \sum_{j=1}^n\left[ k(x_{j}^\ell, x)\nabla_{x_j^\ell}\log p(x_j^\ell) + \nabla_{x_j^\ell} k(x_j^\ell, x)\right]$}
+		\ENDFOR
+	\end{algorithmic}
+\end{algorithm}
+
+
 
 \begin{enumerate}
-    \item Goal: find a distribution $q(x)$ that minimizes its KL divergence with regard to the target distribution $p(x)$ on $\mathcal{X}=\mathbb{R}^d$.
+    \item Goal: obtain samples from a distribution $q(x)$ that has minimal KL divergence with regard to the target distribution $p(x)$ on $\mathcal{X}=\mathbb{R}^d$.
     \item Functional gradient descent: iteratively update $q(x)$ to be another push-forward distribution $q_{[\epsilon\mathbf{\phi}]}(x) = T_{\#}q(x)$, that is the distribution of $T(x)$ for $x\sim q(x)$, where $T= I + \epsilon \mathbf{\phi}$ is a mapping with stepsize $\epsilon$. Here $\phi(x): \mathbb{R}^d\rightarrow \mathbb{R}^d$ could be any smooth mapping.
-    \item Steepest descent direction and Stein's discrepancy: find the mapping $\mathbf{\phi}(x)$ that results in the steepest descent of KL divergence $\arg\max_{\phi} \frac{d}{d \epsilon} KL(q_{[\epsilon\mathbf{\phi}]}\left(x)\lVert p(x)\right)$. The author translate this objective to be the following Stein's discrepancy,
+    \item Steepest descent direction and Stein's discrepancy: to find the mapping $\mathbf{\phi}(x)$ that results in the steepest descent of KL divergence, the author translate this objective to be the following Stein's discrepancy,
     \begin{align}
     \label{eqn:objective}
          \arg\max_\phi\frac{d}{d \epsilon}KL(q_{[\epsilon\mathbf{\phi}]}\left(x)\lVert p(x)\right) = \arg\max_\phi \mathbb{E}_{x\sim q}\left[trace\left(\mathcal{A}_p \mathbf{\phi}(x)\right)\right]
@@ -14,12 +31,17 @@
     \item Kernel trick for closed form solution: Let $\mathcal{H}$ be a reproducing kernel Hilbert space with positive definite kernel $k(x,x')$, i.e. $\mathcal{H}$ is the closure of the linear span $\{f: f = \sum_{i=1}^m a_i \cdot k(x, x_i), a_i\in \mathbb{R}, m\in \mathbb{N}, x_i\in \mathcal{X}=\mathbb{R}^d \}$. Then for $\phi(x) = \left(\phi_1(x), \phi_2(x), \cdots, \phi_d(x)\right)^T \in \mathcal{H}^d$, s.t. $\lVert\phi\rVert_{\mathcal{H}_d}\leq S(q, p)$, \eqref{eqn:objective}  has the following closed form solution.
     \begin{align}
     \label{eqn:solution}
-        \phi(x) \propto \mathbb{E}_{x'\sim q}\left[ \mathcal{A}_p k(x, x') \right]
+        \phi(x) = \mathbb{E}_{x'\sim q}\left[ \mathcal{A}_p k(x', x) \right]
     \end{align}
     where $S(q, p) = \max_{\phi\in \mathcal{H}^d, s.t. \lVert\phi\rVert_2\leq 1} \mathbb{E}_{x\sim q}\left[trace\left(\mathcal{A}_p \mathbf{\phi}(x)\right)\right]$ is the Kernelized Stein's discrepancy. Here the authors assume that the function $K(x, x')$ given fixed $x'$ lies in the stein class of target density function $p(x)$.
-    \item Approximate steepest descent under discrete particles: 
-    
+    \item Approximation for $\phi$ with discrete particles $x_1, \cdots, x_n$: the closed-form solution \eqref{eqn:solution} involves high dimensional integration that is often intractable. Therefore, the author uses $n$ discrete particles $x_1, \cdots, x_n$ drawn from $q$ to perform the Monte Carlo estimate for the integral. In each iteration, the particle is then updated with the estimated mapping $T = I + \epsilon \phi$.
 \end{enumerate}
 
 
 \paragraph{Extreme case of SVGD with $n=1$ particle.} This is equivalent to MAP estimate under gradient descent of $\log p(x)$ where $p(x)$ is the target distribution.
+
+
+\paragraph{Scalability of SVGD with regard to model dimension and number of particles}
+
+
+\paragraph{Performance of SVGD in terms of Estimation Error}
