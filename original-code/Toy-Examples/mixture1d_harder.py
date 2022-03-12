@@ -5,11 +5,11 @@ import math
 import os
 import matplotlib.pyplot as plt
 from scipy.stats import norm
-
-np.random.seed(5432)
+from sklearn.neighbors import KernelDensity
 
 class Mixture1d:
     def __init__(self, w1, mu1, sigma1, w2, mu2, sigma2):
+        self.name = "gaussian"
         self.w1 = w1
         self.mu1 = mu1
         self.sigma1 = sigma1
@@ -38,6 +38,13 @@ class Mixture1d:
         curve_1 = norm.pdf(x, self.mu2, self.sigma2)
         curve = self.w1 * curve_0 + self.w2 * curve_1
         iter_pdf = plt.plot(x, curve, lw=2)
+    
+    def axplotpdf(self, ax):
+        x = np.linspace(-14, 14, 100)
+        curve_0 = norm.pdf(x, self.mu1, self.sigma1)
+        curve_1 = norm.pdf(x, self.mu2, self.sigma2)
+        curve = self.w1 * curve_0 + self.w2 * curve_1
+        ax.plot(x, curve, lw=2)
 
 def assertions():
     model = Mixture1d(1/3, -2, 1, 2/3, 2, 1)
@@ -49,10 +56,12 @@ def assertions():
 
 if __name__ == '__main__':
     assertions()
+    np.random.seed(5432)
 
     w1 = 1/3
-    mu1 = -3.0
-    mu2 = 3.0
+    mu = 2.0
+    mu1 = -mu
+    mu2 = mu
     w2 = 2/3
     sigma1 = 1.0
     sigma2 = 1.0
@@ -60,31 +69,46 @@ if __name__ == '__main__':
     
     x0 = np.random.normal(-10,1,[100,1])
     x_after = x0
-    
-    total_iter = 128000
-    step_size = 0.05
-    check_iters = [6400*x for x in list(range(1,21))]
-    histo_bin_count = 10
-    print(check_iters)
 
-    os.system("rm -rf ./output/*.csv")
-    os.system("rm -rf ./output/*.png")
+    step_size = 0.1
+    # step_size = 0.25
+    check_iters = [0, 50, 75, 100, 150, 500]
+    print("check_iters:", check_iters)
 
-    def save_on_check_iter_func(iter_idx, theta):
+    os.system("rm -rf ./output/mixture1d_harder_*.csv")
+    os.system("rm -rf ./output/mixture1d_harder_*.png")
+
+    fig = None
+    axs = None
+    def save_on_check_iter_func2(iter_idx, theta):
+        global fig
+        global axs
+        if fig is None: 
+            fig = plt.figure(figsize=(4 * len(check_iters), 4))
+            axs = fig.subplots(nrows=1, ncols=len(check_iters), sharex=True, sharey=False)
         if iter_idx in check_iters:
-            print(f"svgd ({iter_idx}th iteration): ", np.mean(theta,axis=0))
-            np.savetxt(os.path.join(os.path.dirname(__file__), f"./output/mixture1d_harder_iter_{iter_idx}.csv"), x_after, delimiter=",")
-            print("Copy csv data to here for histogram: https://statscharts.com/bar/histogram?status=edit")
+            idx = check_iters.index(iter_idx)
+            ax = axs[idx]
+            ax.set_title(f'{iter_idx}th Iteration')
+            ax.set_xlim([-14, 14])
+            ax.set_ylim([0, 0.4])
+            
+            print(f"svgd ({iter_idx}th iteration): ", np.mean(theta, axis=0))
+            # np.savetxt(os.path.join(os.path.dirname(__file__), f"./mixture1d_iter_{iter_idx}.csv"), theta, delimiter=",")
 
-            # plot
-            plt.clf()
-            iter_hist = plt.hist(theta, histo_bin_count, density=True, stacked=True)
-            model.plotpdf()
+            model.axplotpdf(ax)
+            # taken from https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
+            kde = KernelDensity(bandwidth=0.5, kernel='gaussian')
+            kde.fit(theta)
+            theta_mesh = np.linspace(-14, 14, 100)
+            logprob = kde.score_samples(theta_mesh[:, None])
 
-            plt.savefig(f"./output/mixture1d_harder_iter_{iter_idx}.png")
-            # plt.show()
+            ax.fill_between(theta_mesh, np.exp(logprob), alpha=0.5)
+            ax.plot(theta, np.full_like(theta, -0.01), '|k', markeredgewidth=1)
 
+
+    save_on_check_iter_func = save_on_check_iter_func2
     save_on_check_iter_func(0, x_after)
-
-    x_after = SVGD().update(x0, model.dlnprob, n_iter=total_iter, stepsize=step_size, callback=save_on_check_iter_func)
-        
+    x_after = SVGD().update(x0, model.dlnprob, n_iter=check_iters[-1], stepsize=step_size, callback=save_on_check_iter_func)
+    if save_on_check_iter_func == save_on_check_iter_func2:
+        plt.savefig(f"./output/_mixture1d_all_step{step_size}_mu{mu}_w{round(w1,2)}_{model.name}.png")

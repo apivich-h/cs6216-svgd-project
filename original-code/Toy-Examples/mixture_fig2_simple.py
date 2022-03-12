@@ -90,6 +90,12 @@ if REDO_SAMPLING:
     dump_cache("MC", sample_size)
     repeat_sample_add("SVGD", sample_size, 100 * 20)
     dump_cache("SVGD", sample_size)
+  np.random.seed(5434)
+  for sample_size in experiment_sample_sizes:
+    repeat_sample_add("MC", sample_size, 100 * 20)
+    dump_cache("MC", sample_size)
+    repeat_sample_add("SVGD", sample_size, 100 * 20)
+    dump_cache("SVGD", sample_size)
 else:
   for method in sample_function_dict:
     for sample_size in experiment_sample_sizes:
@@ -101,16 +107,16 @@ else:
       sample_cache[method][sample_size] = [x for x in data]
   import sys
   if "samplemore" in sys.argv:
-    np.random.seed(5434)
+    np.random.seed(5435)
     for sample_size in experiment_sample_sizes:
-      repeat_sample_add("MC", sample_size, 100 * 20)
+      repeat_sample_add("MC", sample_size, 200 * 20)
       dump_cache("MC", sample_size)
-      repeat_sample_add("SVGD", sample_size, 100 * 20)
+      repeat_sample_add("SVGD", sample_size, 200 * 20)
       dump_cache("SVGD", sample_size)
 
 # %%
 
-EXPERIMENT_REPEAT = 100
+EXPERIMENT_REPEAT = 200
 COS_PARAM_REPEAT = 20
 
 np.random.seed(5432)
