@@ -58,7 +58,7 @@ if __name__ == '__main__':
     def save_on_check_iter_func(iter_idx, theta):
         if iter_idx in check_iters:
             print(f"svgd ({iter_idx}th iteration): ", np.mean(theta,axis=0))
-            np.savetxt(os.path.join(os.path.dirname(__file__), f"./mixture1d_iter_{iter_idx}.csv"), x_after, delimiter=",")
+            np.savetxt(os.path.join(os.path.dirname(__file__), f"./mixture1d_iter_{iter_idx}.csv"), theta, delimiter=",")
 
             # plot
             plt.clf()
