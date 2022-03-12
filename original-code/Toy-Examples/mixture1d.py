@@ -5,6 +5,7 @@ import math
 import os
 import matplotlib.pyplot as plt
 from scipy.stats import norm
+from sklearn.neighbors import KernelDensity
 
 class Mixture1d:
     def __init__(self, w1, mu1, sigma1, w2, mu2, sigma2):
@@ -31,7 +32,7 @@ class Mixture1d:
         return vfunc(points)
 
     def plotpdf(self):
-        x = np.linspace(-10, 10, 100)
+        x = np.linspace(-14, 14, 100)
         curve_0 = norm.pdf(x, self.mu1, self.sigma1)
         curve_1 = norm.pdf(x, self.mu2, self.sigma2)
         curve = self.w1 * curve_0 + self.w2 * curve_1
@@ -52,7 +53,7 @@ if __name__ == '__main__':
 
     histo_bin_count = 20
     step_size = 0.25
-    check_iters = [50, 75, 100, 150, 500]
+    check_iters = [0, 50, 75, 100, 150, 500]
 
     def save_on_check_iter_func(iter_idx, theta):
         if iter_idx in check_iters:
@@ -61,8 +62,17 @@ if __name__ == '__main__':
 
             # plot
             plt.clf()
-            iter_hist = plt.hist(theta, histo_bin_count, density=True, stacked=True)
             model.plotpdf()
+            # taken from https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
+            # instantiate and fit the KDE model
+            kde = KernelDensity(bandwidth=0.5, kernel='gaussian')
+            kde.fit(theta)
+            theta_mesh = np.linspace(-14, 14, 100)
+            # score_samples returns the log of the probability density
+            logprob = kde.score_samples(theta_mesh[:, None])
+
+            plt.fill_between(theta_mesh, np.exp(logprob), alpha=0.5)
+            plt.plot(theta, np.full_like(theta, -0.01), '|k', markeredgewidth=1)
 
             plt.savefig(f"./mixture1d_iter_{iter_idx}.png")
             # plt.show()
