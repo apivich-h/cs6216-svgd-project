@@ -62,6 +62,38 @@ class SVGD():
         return theta, theta_hist
 
 
+'''
+Implementation of Stochastic Gradient Langevin Dynamics from https://icml.cc/2011/papers/398_icmlpaper.pdf.
+Inspired by implementaion of SGLD from https://github.com/wiseodd/MCMC/blob/master/algo/sgld.py.
+'''
+class SLGD():
+    def __init__(self):
+        pass
+
+    def update(self, x0, lnprob, n_iter, N, n, bandwidth=-1, alpha=0.9, a=1.0, debug=False):
+        # Check input
+        if x0 is None or lnprob is None:
+            raise ValueError('x0 or lnprob cannot be None!')
+
+        theta = np.copy(x0)
+        theta_hist = []
+
+        for iter in range(n_iter):
+            if debug and (iter + 1) % 1000 == 0:
+                print('iter ' + str(iter + 1))
+
+            lnpgrad = lnprob(theta)
+            step_size = 1.0/((iter+2)**0.55)
+            grad_logprior = theta
+            grad = grad_logprior + N/n * lnpgrad
+            adj_grad = step_size/2 * grad + np.random.normal(0, np.sqrt(step_size))
+            theta = theta + step_size * adj_grad
+
+            if (iter+1) % 1000 == 0:
+                theta_hist.append(theta)
+        return theta, theta_hist
+
+
 class BayesianLR:
     def __init__(self, X, Y, batchsize=50, a0=1, b0=0.01):
         self.X, self.Y = X, Y
@@ -129,9 +161,11 @@ if __name__ == '__main__':
     d = X_input.shape[1]
     D = d + 1
 
+    method = "SGLD"
+
     accuracy = []
     # split the dataset into training and testing
-    for trial in range(50):
+    for trial in range(1):
         acc = []
         print("Trial " + str(trial+1))
         X_train, X_test, y_train, y_test = train_test_split(X_input, y_input, test_size=0.2)
@@ -145,13 +179,15 @@ if __name__ == '__main__':
         alpha0 = np.random.gamma(a0, b0, M);
         for i in range(M):
             theta0[i, :] = np.hstack([np.random.normal(0, np.sqrt(1 / alpha0[i]), d), np.log(alpha0[i])])
-
-        theta, theta_hist = SVGD().update(x0=theta0, lnprob=model.dlnprob, bandwidth=-1, n_iter=18000, stepsize=0.05, alpha=0.9,
+        if method == "SVGD":
+            theta, theta_hist = SVGD().update(x0=theta0, lnprob=model.dlnprob, bandwidth=-1, n_iter=18000, stepsize=0.05, alpha=0.9,
                               debug=True)
+        elif method == "SGLD":
+            theta, theta_hist = SLGD().update(x0=theta0, lnprob=model.dlnprob, N=100, n=50, n_iter=18000, debug=True)
         # theta_hist.append(theta)
         for th in theta_hist:
-            acc.append(model.evaluation(theta, X_test, y_test))
+            acc.append(model.evaluation(th, X_test, y_test))
         accuracy.append(acc)
     accuracy = np.array(accuracy)
-    accuracy = accuracy.mean(axis=0)
-    np.savetxt("results/svgd_covtype_2epochs_100particles.csv", accuracy, delimiter=",")
+    # accuracy = accuracy.mean(axis=0)
+    np.savetxt("results/sgld_covtype_2epochs_100particles.csv", accuracy, delimiter=",")
