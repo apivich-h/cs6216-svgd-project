@@ -4,23 +4,27 @@ In this section, we report our reproduction effort and verification of the exper
 \subsection{Toy Example}
 \input{figtabstex/fig-toy1d}
 
-\textbf{Illustration of the Convergence of SVGD}
+\noindent\textbf{Illustration of the Convergence of SVGD}
 
 We first reproduced the toy example about 1D Gaussian mixture mentioned in the paper. The task is to use SVGD to approximate a target distribution with PDF $p(x) = \frac{1}{3} N(x; -2, 1) + \frac{2}{3} N(x; 2, 1)$. The particles are initialized by an i.i.d. sample from the distribution $N(-10, 1)$, which is far away from the mode of the target distribution. We use 100 particles and 500 iterations with step size 0.25. We shown in figure \ref{fig:toy1dgaussian}, that SVGD effectively recovered the mixture distribution in $500$ epochs.
 
 We perform additional experiments for two other Gaussian mixture distribution: $\frac{1}{3} N(x; -3, 1) + \frac{2}{3} N(x; 3, 1)$ (where the two modes are farther apart) and $\frac{2}{3} N(x; -3, 1) + \frac{2}{3} N(x; 3, 1)$ (where the smaller mode is farther from the initialization distribution). We see that when the two modes are far apart from each other, the SVGD algorithm converges more slowly, as in Figure 1. (3). Moreover, when the smaller mode are far away from the initialization distribution, the particles in the SVGD algorithm has difficulty visiting the smaller mode, within 500 iterations. However, after we replaces the negative log likelihood function in Algorithm ~\ref{alg:svgd}, as applied in NumPyro's implementation of SVGD, the particles converge much faster and only needs 100 iterations, as in Figure 1. (5). 
 
-\textbf{Illustration of the Performance and Scalability of SVGD}
+\noindent\textbf{Illustration of the Performance and Scalability of SVGD}
+
+The paper also found that SVGD performs better than Monte Carlo sampling on some expectation estimation tasks (smaller MSE). We implement this experiment based on our implementation of the toy example. We use both SVGD and MC to get samples/particles in the same size and check averaged MSE of three estimators estimating $E[X]$, $E[X^2]$, and $E[cos(\omega x + b)]$ respectively. We follow the same setting as in the original paper, except that we calculate averaged MSE over 400 runs for each setting. The results confirmed the claim in the paper, as shown in figure \ref{fig:toy1dmc}.
 
 \input{figtabstex/fig-toy1dmc}
+
+We observe that while SVGD performs better than MC, it is significantly slower. To know how scalable it is with large number of particles, we did an additional experiment (which doesn't exist in the original paper) to plot execution time of using different number of particles to match an unknown multivariate Gaussian in 1000 iterations. We implement two versions of the code, one using the original SVGD implementation in the paper, other using NumPyro's SteinVI API with ELBO loss. We vary the number of particles from 100 to 1600. 
 
 \input{figtabstex/fig-timingparticles}
 
 \subsection{Bayesian Logistic Regression}
 \subsubsection{Small scale}
-We attempt to test the SVGD algorithm in small-scale (less than $10^4$ data points) logistic regression tasks. We aim to construct a model which is able to predict a binary label of some training data. We run the SVGD algorithm as implemented on NumPyro against the No U-Turn Sampler (NUTS) algorithm. Both of the algorithms have implementations on NumPyro. Therefore for our experiments, we are able to construct a model representing the logistic regression problem, and let NumPyro perform the inference process using the algorithms specified. The result is shown in Figure \ref{fig:logist_small}.
+We attempt to test the SVGD algorithm in small-scale (less than $10^4$ data points) logistic regression tasks. We aim to construct a model which is able to predict a binary label of some training data. We run the SVGD algorithm as implemented on NumPyro against the No U-Turn Sampler (NUTS) algorithm \cite{nuts}. Both of the algorithms have implementations on NumPyro. Therefore for our experiments, we are able to construct a model representing the logistic regression problem, and let NumPyro perform the inference process using the algorithms specified. The result is shown in Figure \ref{fig:logist_small}. We can see that the performance is about the same between both algorithms, but SVGD requires fewer particles to represent the distribution. 
+
 \input{figtabstex/fig-logisticsvgdnuts}
-We can see that the performance is about the same between both algorithms. 
 
 \subsubsection{Large scale}
 We also attempt to compare the performance of SVGD with other optimization algorithms on large scale Bayesian logistic regression in terms of test accuracy with respect to the number of iterations and particle size. We use the same dataset the original paper used, which is the binary Covertype dataset. The dataset contains 581012 data entries and each data point has 54 features. The binary Covertype dataset is a special variant of the original Covertype dataset which has 7 output classes. The binary version combines two output classes out of the 7 into class 1, and treats the rest classes as class 0. This dataset is very large even for current computers. If we do not use stochastic gradient descent and load all data in one batch, we would most likely encounter memory overflow. 
@@ -30,7 +34,7 @@ The baseline we choose is stochastic gradient Langevin dynamics (SGLD) \cite{ref
 
 \subsection{Bayesian Neural Network}
 
-A Bayesian Neural Network (BNN) is a neural network where rather than finding the single optimal estimation for the model weights, we perform inference on the model weights to find the .
+A Bayesian Neural Network (BNN) is a neural network where rather than finding the single optimal estimation for the model weights, we perform inference to find a posterior distribution for the model weights.
 
 For the experiments, we train a small BNN on a set of regression tasks. We follow the setup from the paper and use the UCI dataset. We run tests on the SVGD algorithm as implemented by the authors of the original paper and also the implementation on NumPyro, and also on the probabilistic back-propagation (PBP) algorithm. A change that we made was to run each algorithms using the same subsampling size of 100 and ran each algorithms for up to 50 or 200 epochs, depending on the training data size. The other hyperparameters were kept the same as the original code. We report the results in Tables \ref{tab:bnn_rmse} and \ref{tab:bnn_logl}. 
 
