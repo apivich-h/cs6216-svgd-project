@@ -48,6 +48,8 @@ fit_func = np.poly1d(fit_coefficients)
 
 plt.clf()
 mesh = np.linspace(0, timing_particle_sizes[-1]/100, 100)
+plt.xlabel("#particles")
+plt.ylabel("time(s)")
 plt.plot(mesh * 100, [fit_func(x) for x in mesh], '--')
 plt.plot(timing_particle_sizes, mean_data, "ro", linestyle="None",markersize=6)
 plt.legend([f"${round(fit_coefficients[0], 3)} x'^2 + {round(fit_coefficients[1], 3)} x' + {round(fit_coefficients[2],3)}$  (x' = x/100)", "averaged timing data"])

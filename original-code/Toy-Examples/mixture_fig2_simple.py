@@ -198,6 +198,11 @@ outfile1 = '../../figs/toy-figure2.png'
 file2 = "./output/mixture_fig2_merged.json"
 outfile2 = '../../figs/toy-figure2-merged.png'
 
+def forceAspect(ax,aspect=1):
+    im = ax.get_images()
+    extent = im[0].get_extent()
+    ax.set_aspect(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect)
+
 def plot_file(filename, outfile):
   with open(filename, 'r') as f:
     all_result_dict = json.load(f)
@@ -205,7 +210,7 @@ def plot_file(filename, outfile):
   import matplotlib.pyplot as plt
   fig_keys = list(est_true_value_dict.keys())
   num_plots = len(fig_keys)
-  fig = plt.figure(figsize=(4 * num_plots, 3))
+  fig = plt.figure(figsize=(4 * num_plots, 3.5))
   axs = fig.subplots(nrows=1, ncols=num_plots, sharex=True, sharey=False)
   for i, key in enumerate(fig_keys):
     estimate_dict = all_result_dict[key]
@@ -213,12 +218,16 @@ def plot_file(filename, outfile):
     ax.set_title(f'Estimating {key}')
     ax.set_yscale('log')
     ax.set_xscale('log')
+    if i == 0: ax.set_ylabel('MSE (log scale)')
+    if i == 1: ax.set_xlabel('#particles (log scale)')
     for method_key in estimate_dict:
       estimate_mse_data = estimate_dict[method_key]
       X, Y = np.array(estimate_mse_data).T
       ax.plot(X, Y,  marker='o')
+    
     ax.legend(list(estimate_dict.keys()))
 
+  plt.tight_layout()
   print("saving fig to:", outfile)
   fig.savefig(outfile)
 
