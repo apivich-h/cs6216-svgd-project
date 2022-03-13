@@ -1,8 +1,10 @@
 \section{Summary of the Paper}
 
-The paper proposes a general purpose variational inference algorithm -- Stein Variation Gradient Descent (SVGD).  We first summarize the author's justification for the design of the SVGD algorithm, and then explain the extreme case, scalability, and performance of the SVGD algorithm.
+The paper proposes a general purpose variational inference algorithm -- Stein Variation Gradient Descent (SVGD). In this section, we summarize the author's justification for the design of the SVGD algorithm. The pseudocode is in Algorithm \ref{alg:svgd}. The ultimate goal of the SVGD algorithm is to perform inference on a target distribution $p(x)$ on $\mathcal{X}=\mathbb{R}^d$. To do that, the algorithm obtains multiple samples from a distribution $q(x)$ that has small KL divergence with regard to the target distribution $p(x)$, by solving the following problem.
 
-\subsection{Design of SVGD}
+% We first summarize the author's justification for the design of the SVGD algorithm, and then explain the extreme case, scalability, and performance of the SVGD algorithm.
+
+% \subsection{Design of SVGD}
 
 \begin{algorithm}[t!]
 	\caption{Bayesian Inference via Variational Gradient Descent~\cite{ref_article_svgd}}
@@ -13,12 +15,10 @@ The paper proposes a general purpose variational inference algorithm -- Stein Va
 		\FOR {iteration $\ell$}
 		\STATE{$x_i^{\ell+1}\leftarrow x_i^l + \epsilon_l \hat{\mathbf{\phi}}^*(x_i^\ell)$,
 		
-		where $\hat{\mathbf{\phi}}^*(x_i^\ell) = \frac{1}{n} \sum_{j=1}^n\left[ k(x_{j}^\ell, x)\nabla_{x_j^\ell}\log p(x_j^\ell) + \nabla_{x_j^\ell} k(x_j^\ell, x)\right]$}
+		where $\hat{\mathbf{\phi}}^*(x) = \frac{1}{n} \sum_{j=1}^n\left[ k(x_{j}^\ell, x)\nabla_{x_j^\ell}\log p(x_j^\ell) + \nabla_{x_j^\ell} k(x_j^\ell, x)\right]$}
 		\ENDFOR
 	\end{algorithmic}
 \end{algorithm}
-
-The pseudocode of the Stein Variation Gradient Descent (SVGD) algorithm is in Algorithm \ref{alg:svgd}. The ultimate goal of this algorithm is to perform inference on a target distribution $p(x)$ on $\mathcal{X}=\mathbb{R}^d$. To do that, the algorithm obtains multiple samples from a distribution $q(x)$ that has small KL divergence with regard to the target distribution $p(x)$, by solving the following problem.
 
 \begin{align}
     \arg\min_q KL(q(x)\lVert p(x)),\ sample\ x_1,\cdots,x_n\sim q(x)
@@ -44,11 +44,17 @@ The algorithm is designed with the following key ingredients.
 \end{enumerate}
 
 
-\subsection{Extreme case of SVGD with $n=1$ particle.} 
+% \subsection{Extreme case of SVGD with $n=1$ particle.} 
 
-The SVGD algorithm under one particle is equivalent to MAP estimate under gradient descent of $\log p(x)$ where $p(x)$ is the target distribution. \footnote{This is covered in the paper authors' blog \url{}.}
+% The SVGD algorithm under one particle is equivalent to MAP estimate under gradient descent of $\log p(x)$ where $p(x)$ is the target distribution. \footnote{This is covered in the paper authors' blog \url{https://www.cs.utexas.edu/~qlearning/project.html?p=svgd}.} For example, under the RBF kernel $k(x, x') = \frac{1}{h}e^{\lVert x- x'\rVert_2^2}$, when applying the mapping $\hat{\phi}(x)$ in Algorithm \ref{alg:svgd} to the single particle $x=x_1^\ell$, we obtain the following gradient mapping.
 
-\subsection{Performance of SVGD in terms of Estimation Error}
+% \begin{align}
+%     \hat{\mathbf{\phi}}^*(x)|_{x=x_1^\ell} & = k(x_1^\ell, x)|_{x=x_1^e\ll} \nabla_{x_1^\ell}\log p(x_{1}^\ell) + \nabla_{x_1^\ell}k(x_1^\ell, x)|_{x=x_1^\ell}\\
+%     & = k(x_1^\ell, x_1^\ell) \nabla_{x_1^\ell}\log p(x_{1}^\ell) + \mathbf{0}\\
+%     & = \frac{1}{h} \nabla_{x_1^\ell}\log p(x_{1}^\ell)
+% \end{align}
+
+% \subsection{Performance of SVGD in terms of Estimation Error}
 
 
-\subsection{Scalability of SVGD with regard to model dimension and number of particles}
+% \subsection{Scalability of SVGD with regard to model dimension and number of particles}
