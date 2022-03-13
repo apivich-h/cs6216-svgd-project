@@ -24,7 +24,7 @@ class SVGD():
         return (Kxy, dxkxy)
     
  
-    def update(self, x0, lnprob, n_iter = 1000, stepsize = 1e-3, bandwidth = -1, alpha = 0.9, debug = False):
+    def update(self, x0, lnprob, n_iter = 1000, stepsize = 1e-3, bandwidth = -1, alpha = 0.9, debug = False, callback=None):
         # Check input
         if x0 is None or lnprob is None:
             raise ValueError('x0 or lnprob cannot be None!')
@@ -51,5 +51,8 @@ class SVGD():
             adj_grad = np.divide(grad_theta, fudge_factor+np.sqrt(historical_grad))
             theta = theta + stepsize * adj_grad 
             
+            if callback is not None:
+                callback(iter+1, theta)
+
         return theta
     

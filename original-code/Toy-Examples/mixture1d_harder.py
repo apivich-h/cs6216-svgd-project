@@ -9,6 +9,7 @@ from sklearn.neighbors import KernelDensity
 
 class Mixture1d:
     def __init__(self, w1, mu1, sigma1, w2, mu2, sigma2):
+        self.name = "gaussian"
         self.w1 = w1
         self.mu1 = mu1
         self.sigma1 = sigma1
@@ -32,11 +33,11 @@ class Mixture1d:
         return vfunc(points)
 
     def plotpdf(self):
-        x = np.linspace(-14, 14, 100)
+        x = np.linspace(-10, 10, 100)
         curve_0 = norm.pdf(x, self.mu1, self.sigma1)
         curve_1 = norm.pdf(x, self.mu2, self.sigma2)
         curve = self.w1 * curve_0 + self.w2 * curve_1
-        plt.plot(x, curve, lw=2)
+        iter_pdf = plt.plot(x, curve, lw=2)
     
     def axplotpdf(self, ax):
         x = np.linspace(-14, 14, 100)
@@ -45,11 +46,22 @@ class Mixture1d:
         curve = self.w1 * curve_0 + self.w2 * curve_1
         ax.plot(x, curve, lw=2)
 
+def assertions():
+    model = Mixture1d(1/3, -2, 1, 2/3, 2, 1)
+    almost_eq = lambda  x, y: abs(x - y) < 1e-5
+    assert almost_eq(model.dlnprob_single(1), 0.963701)
+    assert almost_eq(model.dlnprob_single(2), -0.000670813)
+    assert almost_eq(model.dlnprob_single(-1), -0.858653)
+    assert almost_eq(model.dlnprob_single(-2), 0.0026819)
+
 if __name__ == '__main__':
+    assertions()
     np.random.seed(5432)
+
     w1 = 1/3
-    mu1 = -2.0
-    mu2 = 2.0
+    mu = 2.0
+    mu1 = -mu
+    mu2 = mu
     w2 = 2/3
     sigma1 = 1.0
     sigma2 = 1.0
@@ -58,31 +70,13 @@ if __name__ == '__main__':
     x0 = np.random.normal(-10,1,[100,1])
     x_after = x0
 
-    histo_bin_count = 20
-    step_size = 0.25
+    step_size = 0.1
+    # step_size = 0.25
     check_iters = [0, 50, 75, 100, 150, 500]
+    print("check_iters:", check_iters)
 
-    def save_on_check_iter_func1(iter_idx, theta):
-        if iter_idx in check_iters:
-            print(f"svgd ({iter_idx}th iteration): ", np.mean(theta,axis=0))
-            np.savetxt(os.path.join(os.path.dirname(__file__), f"./mixture1d_iter_{iter_idx}.csv"), theta, delimiter=",")
-
-            # plot
-            plt.clf()
-            model.plotpdf()
-            # taken from https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
-            # instantiate and fit the KDE model
-            kde = KernelDensity(bandwidth=0.5, kernel='gaussian')
-            kde.fit(theta)
-            theta_mesh = np.linspace(-14, 14, 100)
-            # score_samples returns the log of the probability density
-            logprob = kde.score_samples(theta_mesh[:, None])
-
-            plt.fill_between(theta_mesh, np.exp(logprob), alpha=0.5)
-            plt.plot(theta, np.full_like(theta, -0.01), '|k', markeredgewidth=1)
-
-            plt.savefig(f"./mixture1d_iter_{iter_idx}.png")
-            # plt.show()
+    os.system("rm -rf ./output/mixture1d_harder_*.csv")
+    os.system("rm -rf ./output/mixture1d_harder_*.png")
 
     fig = None
     axs = None
@@ -100,7 +94,7 @@ if __name__ == '__main__':
             ax.set_ylim([0, 0.4])
             
             print(f"svgd ({iter_idx}th iteration): ", np.mean(theta, axis=0))
-            np.savetxt(os.path.join(os.path.dirname(__file__), f"./mixture1d_iter_{iter_idx}.csv"), theta, delimiter=",")
+            # np.savetxt(os.path.join(os.path.dirname(__file__), f"./mixture1d_iter_{iter_idx}.csv"), theta, delimiter=",")
 
             model.axplotpdf(ax)
             # taken from https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
@@ -117,11 +111,4 @@ if __name__ == '__main__':
     save_on_check_iter_func(0, x_after)
     x_after = SVGD().update(x0, model.dlnprob, n_iter=check_iters[-1], stepsize=step_size, callback=save_on_check_iter_func)
     if save_on_check_iter_func == save_on_check_iter_func2:
-        plt.savefig(f"./mixture1d_all.png")
-
-# %%
-# import numpy as np
-# data = np.loadtxt("./mixture1d_iter_500.csv")
-# print(np.mean(data))
-
-# %%
+        plt.savefig(f"./output/_mixture1d_all_step{step_size}_mu{mu}_w{round(w1,2)}_{model.name}.png")

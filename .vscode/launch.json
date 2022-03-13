@@ -11,6 +11,23 @@
       "program": "${workspaceFolder}/original-code/Toy-Examples/mixture1d.py",
       "console": "integratedTerminal",
       "justMyCode": true
+    },
+    {
+      "name": "Python: mixture1d_numpyro",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/original-code/Toy-Examples/mixture1d_numpyro.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: scalability_numpyro",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/original-code/Toy-Examples/simple_scalability_test_numpyro.py",
+      "args": ["redo_timing"],
+      "console": "integratedTerminal",
+      "justMyCode": true
     }
   ]
 }
