@@ -3,12 +3,7 @@ In this section, we report our reproduction effort and verification of the exper
 
 \subsection{Toy Example}
 
-We first reproduced the toy example about 1D Gaussian mixture mentioned in the paper. The task is to use SVGD to approximate a target distribution with PDF $p(x) = \frac{1}{3} N(x; -2, 1) + \frac{1}{3} N(x; 2, 1)$. The particles are initialized by an i.i.d. sample from the distribution $N(-10, 1)$, which is far away from the mode of the target distribution. We use 100 particles and 500 iterations with step size 0.25. 
-
-As shown in figure \ref{fig:toy1dgaussian}, SVGD effectively recovered the distribution.
-
-
-\begin{figure}[h]
+\begin{figure}[!htbp]
     \centering
     \begin{tabular}{@{}c@{}}
         \includegraphics[width=\textwidth]{figs/toy-figure1_step0.1_mu2.0_w0.33_gaussian.png} \\
@@ -37,7 +32,7 @@ As shown in figure \ref{fig:toy1dgaussian}, SVGD effectively recovered the distr
     % \end{tabular}
     
     \begin{tabular}{@{}c@{}}
-        \includegraphics[width=\textwidth]{figs/toy-figure1.png} \\
+        \includegraphics[width=\textwidth]{figs/toy-figure1-numpyro.png} \\
         \small (5) ELBO Loss (NumPyro) StepSize = 0.1, 100 iters, $\mu = \pm 3$, $(w_1, w_2) = (0.67, 0.33)$
     \end{tabular}
      
@@ -45,10 +40,24 @@ As shown in figure \ref{fig:toy1dgaussian}, SVGD effectively recovered the distr
     \label{fig:toy1dgaussian}
 \end{figure}
 
-\begin{figure}[h]
+We first reproduced the toy example about 1D Gaussian mixture mentioned in the paper. The task is to use SVGD to approximate a target distribution with PDF $p(x) = \frac{1}{3} N(x; -2, 1) + \frac{1}{3} N(x; 2, 1)$. The particles are initialized by an i.i.d. sample from the distribution $N(-10, 1)$, which is far away from the mode of the target distribution. We use 100 particles and 500 iterations with step size 0.25. 
+
+As shown in figure \ref{fig:toy1dgaussian}, SVGD effectively recovered the distribution.
+
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=\textwidth]{figs/toy-figure2-merged.png}
     \caption{Comparison between MC and SVGD on simple mean estimation tasks. }
+    \label{fig:my_label}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \begin{tabular}{@{}cc@{}}
+            \includegraphics[width=0.45\textwidth]{figs/toy-timing-particles.png} & \includegraphics[width=0.45\textwidth]{figs/toy-timing-particles.png}\\
+        \small Original SVGD & NumPyro (ELBO Loss) \\
+    \end{tabular}
+    \caption{Timing vs particles }
     \label{fig:my_label}
 \end{figure}
 
@@ -76,7 +85,7 @@ The baseline we choose is stochastic gradient Langevin dynamics (SGLD), where a 
 
 A Bayesian Neural Network (BNN) is a neural network where rather than finding the single optimal value for the model weights, we aim to find a distribution on the model weights that fits with the observations instead.
 
-For the experiments, we train a small BNN on a set of regression tasks. We follow the setup from the paper and use the UCI dataset. We run tests on the SVGD algorithm as implemented by the authors of the original paper and also the implementation on NumPyro, and also on the probabilistic back-propagation (PBP) algorithm. A change that we made was to run each algorithms using the same subsaming size of 100 and ran each algorithms for up to 50 or 200 epochs, depending on the training data size. The other hyperparameters were kept the same as the original code. We report the results in Tables \ref{tab:bnn_rmse} and \ref{tab:bnn_logl}. 
+For the experiments, we train a small BNN on a set of regression tasks. We follow the setup from the paper and use the UCI dataset. We run tests on the SVGD algorithm as implemented by the authors of the original paper and also the implementation on NumPyro, and also on the probabilistic back-propagation (PBP) algorithm. A change that we made was to run each algorithms using the same subsampling size of 100 and ran each algorithms for up to 50 or 200 epochs, depending on the training data size. The other hyperparameters were kept the same as the original code. We report the results in Tables \ref{tab:bnn_rmse} and \ref{tab:bnn_logl}. 
 
 \begin{table}[]
 \centering
@@ -120,9 +129,9 @@ yacht & $-1.129 \pm 0.038$ & $-2.741 \pm 0.065$ & $-3.350 \pm 0.004$ \\
 \end{tabular}
 \end{table}
 
-In our results, we were able to replicate the superior performance of the SVGD algorithm over the PBP algorithm. In most test cases used, we are able to show that the predictions from the SVGD algorithm is more accurate than that from the PBP algorithm, as measured by the root-mean-squared error of the prediction. 
+In our results, we were able to show that SVGD performs better than the PBP algorithm. In most test cases used, we are able to show that the predictions from the SVGD algorithm is more accurate than that from the PBP algorithm, as measured by the root-mean-squared error of the prediction. 
 
-However, we found that the SVGD algorithm implementation on NumPyro was not able to replicate the performance that the original SVGD algorithm was able to. This could be due to the fact that unlike the SVGD algorithm from the original paper, the SVGD algorithm on NumPyro is minimising the loss based on the ELBO value, and not the true posterior probability. However, to test if this is the case, further tests would need to be ran.
+However, we found that the SVGD algorithm implementation on NumPyro was not able to replicate the performance that the original SVGD algorithm was able to. This could be due to the fact that unlike the SVGD algorithm from the original paper, the SVGD algorithm on NumPyro is minimising the loss based on the ELBO value, and not the true posterior probability. We also find that the two implementations require different tunings of the hyperparameters to obtain the best performances. However, to test if this is the case, further tests would need to be ran.
 
 \begin{figure}[h]
     \centering
