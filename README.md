@@ -20,6 +20,11 @@ Paper: `https://arxiv.org/pdf/1608.04471.pdf`
   - original-code/Toy-Examples/simple_scalability_test.py
   - original-code/Toy-Examples/simple_scalability_test_numpyro.py
 
+## Bayesian Logistic Regression on binary Covertype
+- For figure 5
+  - bayeisan_logistic_covtype.py
+  - dsvi_logistic_covtype.py
+
 ## Links to public codebases used in this project:
 ### SVGD:
 - https://github.com/dilinwang820/Stein-Variational-Gradient-Descent (the original implementation of SVGD from the authors of the paper)
