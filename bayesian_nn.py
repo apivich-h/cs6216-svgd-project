@@ -104,7 +104,7 @@ def metrics(ys_test, ys_pred_mean, ys_pred_std, y_data_mean=None, y_data_std=Non
 
 
 def train_svgd(xs_train, ys_train, xs_test, hidden_dim=50, num_particles=20,
-               num_steps=5000, subsample_size=100, lr=1e-3):
+               num_steps=5000, subsample_size=100, lr=1e-2):
     bnn_model = generate_bnn_model(hidden_dim=hidden_dim)
 
     inf_key, pred_key, data_key = random.split(random.PRNGKey(42), 3)
@@ -114,7 +114,7 @@ def train_svgd(xs_train, ys_train, xs_test, hidden_dim=50, num_particles=20,
         model=bnn_model,
         guide=AutoDelta(bnn_model, init_loc_fn=partial(init_to_uniform, radius=0.1)),
         kernel_fn=RBFKernel(),
-        loss=RenyiELBO(alpha=0.9, num_particles=40),
+        loss=Trace_ELBO(num_particles=10),
         optim=Adagrad(lr),
         num_particles=num_particles
     )

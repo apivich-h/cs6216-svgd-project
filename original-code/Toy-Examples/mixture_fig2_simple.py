@@ -11,6 +11,7 @@ MU1 = -2
 MU2 = 2
 SIG1 = 1
 SIG2 = 1
+step_size = 0.15
 
 EXPERIMENT_REPEAT = 100
 COS_PARAM_REPEAT = 20
@@ -53,7 +54,7 @@ def mc_sample(sample_size):
 def svgd_sample(sample_size):
   model = Mixture1d(W1, MU1, SIG1, W2, MU2, SIG2)
   x0 = np.random.normal(-10,1,[sample_size,1])
-  x_after = SVGD().update(x0, model.dlnprob, n_iter=500, stepsize=0.25)
+  x_after = SVGD().update(x0, model.dlnprob, n_iter=500, stepsize=step_size)
   return x_after.flatten()
 
 sample_function_dict = {
@@ -79,10 +80,11 @@ def repeat_sample_add(sample_method,  sample_size, times):
 
 def dump_cache(method, sample_size):
   print("----- dump sample cache: ", method, sample_size)
-  fname = f"./output/sample_cache_{method}_{sample_size}.csv"
+  fname = f"./output/sample_cache_{step_size}_{method}_{sample_size}.csv"
   np.savetxt(fname, sample_cache[method][sample_size])
 
-REDO_SAMPLING = False
+import sys
+REDO_SAMPLING = "redo_sampling" in sys.argv
 if REDO_SAMPLING:
   np.random.seed(5433)
   for sample_size in experiment_sample_sizes:
@@ -90,32 +92,44 @@ if REDO_SAMPLING:
     dump_cache("MC", sample_size)
     repeat_sample_add("SVGD", sample_size, 100 * 20)
     dump_cache("SVGD", sample_size)
+  np.random.seed(5434)
+  for sample_size in experiment_sample_sizes:
+    repeat_sample_add("MC", sample_size, 100 * 20)
+    dump_cache("MC", sample_size)
+    repeat_sample_add("SVGD", sample_size, 100 * 20)
+    dump_cache("SVGD", sample_size)
+  np.random.seed(5435)
+  for sample_size in experiment_sample_sizes:
+    repeat_sample_add("MC", sample_size, 200 * 20)
+    dump_cache("MC", sample_size)
+    repeat_sample_add("SVGD", sample_size, 200 * 20)
+    dump_cache("SVGD", sample_size)
 else:
   for method in sample_function_dict:
     for sample_size in experiment_sample_sizes:
       print("----- loading sample cache: ", method, sample_size)
-      fname = f"./output/sample_cache_{method}_{sample_size}.csv"
+      fname = f"./output/sample_cache_{step_size}_{method}_{sample_size}.csv"
       data = np.loadtxt(fname)
       if method not in sample_cache: sample_cache[method] = {}
       if sample_size not in sample_cache[method]: sample_cache[method][sample_size] = []
       sample_cache[method][sample_size] = [x for x in data]
-  import sys
   if "samplemore" in sys.argv:
-    np.random.seed(5434)
-    for sample_size in experiment_sample_sizes:
-      repeat_sample_add("MC", sample_size, 100 * 20)
-      dump_cache("MC", sample_size)
-      repeat_sample_add("SVGD", sample_size, 100 * 20)
-      dump_cache("SVGD", sample_size)
-
+    raise NotImplementedError
 # %%
 
-EXPERIMENT_REPEAT = 100
+EXPERIMENT_REPEAT = 400
 COS_PARAM_REPEAT = 20
+np.random.seed(5400)
 
-np.random.seed(5432)
+# def shuffle_all():
+#   print("shuffle_all.")
+#   for method in sample_function_dict:
+#     np.random.shuffle(sample_cache[method][sample_size])
+# shuffle_all()
+
 def next_sample_getter_gen(method, expected_sample_size):
   idx = 0
+  np.random.shuffle(sample_cache[method][sample_size])
   def _next_sample_getter(sample_size):
     assert sample_size == expected_sample_size
     nonlocal idx
@@ -173,35 +187,41 @@ for est_func_name in est_function_dict:
         results_list.append([sample_size, mse])
 
 import json
-with open("./output/mixture_fig2.json", 'w') as f:
+with open(f"./output/mixture_fig2_{step_size}.json", 'w') as f:
   json.dump(all_result_dict, f, indent=2)
 
 # %%
 import json
-with open("./output/mixture_fig2.json", 'r') as f:
-  all_result_dict = json.load(f)
+file1 = f"./output/mixture_fig2_{step_size}.json"
+outfile1 = '../../figs/toy-figure2.png'
 
-import matplotlib.pyplot as plt
-fig_keys = list(est_true_value_dict.keys())
-num_plots = len(fig_keys)
-fig = plt.figure(figsize=(4 * num_plots, 3))
-axs = fig.subplots(nrows=1, ncols=num_plots, sharex=True, sharey=False)
-for i, key in enumerate(fig_keys):
-  estimate_dict = all_result_dict[key]
-  ax = axs[i]
-  ax.set_title(f'Estimating {key}')
-  ax.set_yscale('log')
-  ax.set_xscale('log')
-  for method_key in estimate_dict:
-    estimate_mse_data = estimate_dict[method_key]
-    X, Y = np.array(estimate_mse_data).T
-    ax.plot(X, Y)
-  ax.legend(list(estimate_dict.keys()))
+file2 = "./output/mixture_fig2_merged.json"
+outfile2 = '../../figs/toy-figure2-merged.png'
 
-outfigpath1 = './output/figure2.png'
-outfigpath2 = '../../figs/toy-figure2.png'
-print("saving fig to:", outfigpath1)
-fig.savefig(outfigpath1)
-print("saving fig to:", outfigpath2)
-fig.savefig(outfigpath2)
+def plot_file(filename, outfile):
+  with open(filename, 'r') as f:
+    all_result_dict = json.load(f)
+
+  import matplotlib.pyplot as plt
+  fig_keys = list(est_true_value_dict.keys())
+  num_plots = len(fig_keys)
+  fig = plt.figure(figsize=(4 * num_plots, 3))
+  axs = fig.subplots(nrows=1, ncols=num_plots, sharex=True, sharey=False)
+  for i, key in enumerate(fig_keys):
+    estimate_dict = all_result_dict[key]
+    ax = axs[i]
+    ax.set_title(f'Estimating {key}')
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+    for method_key in estimate_dict:
+      estimate_mse_data = estimate_dict[method_key]
+      X, Y = np.array(estimate_mse_data).T
+      ax.plot(X, Y,  marker='o')
+    ax.legend(list(estimate_dict.keys()))
+
+  print("saving fig to:", outfile)
+  fig.savefig(outfile)
+
+plot_file(file1, outfile1)
+plot_file(file2, outfile2)
 # %%

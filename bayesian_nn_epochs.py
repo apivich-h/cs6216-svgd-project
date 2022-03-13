@@ -1,51 +1,46 @@
 import numpy as np
 import pandas as pd
-from functools import partial
 
-from jax import random
-from numpyro.optim import Adagrad
-from numpyro.infer import Predictive, Trace_ELBO, RenyiELBO, init_to_uniform
-from numpyro.infer.autoguide import AutoDelta
-
-from numpyro.contrib.einstein.steinvi import SteinVI
-from numpyro.contrib.einstein.kernels import RBFKernel
-
-from bayesian_nn import metrics, generate_bnn_model, train_svgd
+from bayesian_nn import metrics, train_svgd
 from svgd_original_nn import train_original_svgd
 from pbp.pbp_net import PBPNet
 from data_uci.uci import load_uci_dataset, UCI_SETS
 
 MINIBATCHES = 100
-EPOCHS_TO_RUN = list(range(1, 21)) + list(range(25, 51, 5)) + list(range(60, 101, 10))
 
 
 def _hidden_dim_for_dataset(d):
     return 100 if d == 'protein' else 50
 
 
+def _epochs_for_dataset(d):
+    if d in ['kin8nm', 'naval', 'power', 'protein']:
+        return [1] + list(range(25, 101, 25))
+    else:
+        return [1] + list(range(25, 100, 25)) + list(range(100, 501, 50))
+
+
 def _run_svgd_incrementally(xs_train, ys_train, xs_test, dset):
-    for ep in EPOCHS_TO_RUN:
+    for ep in _epochs_for_dataset(dset):
         y_mean, y_std, _ = train_svgd(xs_train,
                                       ys_train,
                                       xs_test,
                                       hidden_dim=_hidden_dim_for_dataset(dset),
                                       num_particles=20,
                                       num_steps=ep * xs_train.shape[0] // MINIBATCHES,
-                                      subsample_size=MINIBATCHES,
-                                      lr=1e-1)
+                                      subsample_size=MINIBATCHES)
         yield ep, y_mean, y_std
 
 
 def _run_original_svgd_incrementally(xs_train, ys_train, xs_test, dset):
-    for ep in EPOCHS_TO_RUN:
+    for ep in _epochs_for_dataset(dset):
         y_mean, y_std, _ = train_original_svgd(xs_train,
                                                ys_train,
                                                xs_test,
                                                hidden_dim=_hidden_dim_for_dataset(dset),
                                                num_particles=20,
                                                num_steps=ep * xs_train.shape[0] // MINIBATCHES,
-                                               subsample_size=MINIBATCHES,
-                                               lr=1e-3)
+                                               subsample_size=MINIBATCHES)
         yield ep, y_mean, y_std
 
 
@@ -54,7 +49,7 @@ def _run_pbp_incrementally(xs_train, ys_train, xs_test, dset):
 
     curr_epochs = 0
 
-    for ep in EPOCHS_TO_RUN:
+    for ep in _epochs_for_dataset(dset):
         d_epoch = ep - curr_epochs
         net.train(xs_train, ys_train, n_epochs=d_epoch)
         mean, var, noise_var = net.predict(xs_test)
@@ -76,9 +71,10 @@ if __name__ == '__main__':
     try:
         for dset, r in [
             ('boston', 0),
-            ('kin8nm', 0),
+            ('energy', 0),
+            ('yacht', 0),
+            ('naval', 0),
             ('protein', 0),
-            ('yacht', 0)
         ]:
 
             print(f'{dset}, repeat {r}')

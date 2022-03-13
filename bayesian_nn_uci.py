@@ -7,7 +7,6 @@ from pbp.pbp_training import train_pbp
 from data_uci.uci import load_uci_dataset, UCI_SETS
 
 MINIBATCHES = 100
-EPOCHS = 40
 
 
 def _hidden_dim_for_dataset(d):
@@ -19,15 +18,18 @@ def _repeats_for_dataset(d):
     return 5 if d == 'protein' else 10
 
 
+def _epochs_for_dataset(d):
+    return 50 if d in ['kin8nm', 'naval', 'power', 'protein'] else 200
+
+
 def _run_svgd(xs_train, ys_train, xs_test, dset):
     return train_svgd(xs_train,
                       ys_train,
                       xs_test,
                       hidden_dim=_hidden_dim_for_dataset(dset),
                       num_particles=20,
-                      num_steps=EPOCHS * xs_train.shape[0] // MINIBATCHES,
-                      subsample_size=MINIBATCHES,
-                      lr=1e-1)
+                      num_steps=_epochs_for_dataset(dset) * xs_train.shape[0] // MINIBATCHES,
+                      subsample_size=MINIBATCHES)
 
 
 def _run_original_svgd(xs_train, ys_train, xs_test, dset):
@@ -36,9 +38,8 @@ def _run_original_svgd(xs_train, ys_train, xs_test, dset):
                                xs_test,
                                hidden_dim=_hidden_dim_for_dataset(dset),
                                num_particles=20,
-                               num_steps=2000,
-                               subsample_size=MINIBATCHES,
-                               lr=1e-3)
+                               num_steps=_epochs_for_dataset(dset) * xs_train.shape[0] // MINIBATCHES,
+                               subsample_size=MINIBATCHES)
 
 
 # def _run_bbb(xs_train, ys_train, xs_test, dset):
@@ -57,7 +58,7 @@ def _run_pbp(xs_train, ys_train, xs_test, dset):
                      ys_train,
                      xs_test,
                      hidden_dim=_hidden_dim_for_dataset(dset),
-                     num_epochs=EPOCHS)
+                     num_epochs=_epochs_for_dataset(dset))
 
 
 # def _run_nuts(xs_train, ys_train, xs_test, dset):
@@ -89,8 +90,8 @@ if __name__ == '__main__':
 
                 for (alg, fn) in [
                     ('svgd', _run_svgd),
-                    # ('svgd_orig', _run_original_svgd),
-                    # ('pbp', _run_pbp),
+                    ('svgd_orig', _run_original_svgd),
+                    ('pbp', _run_pbp),
                 ]:
                     if (alg, dset, r) in done_cases:
                         continue
