@@ -6,7 +6,7 @@
 
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
-\usepackage[size=a1,scale=1.0]{beamerposter}
+\usepackage[size=a0,scale=1.0]{beamerposter}
 \usetheme{gemini}
 \usecolortheme{ITNU}
 \usepackage{graphicx}
@@ -38,7 +38,7 @@
 % (N+1)*\sepwidth + N*\colwidth = \paperwidth
 \newlength{\sepwidth}
 \newlength{\colwidth}
-\setlength{\sepwidth}{0.025\paperwidth}
+\setlength{\sepwidth}{0.001\paperwidth}
 \setlength{\colwidth}{0.3\paperwidth}
 
 \newcommand{\separatorcolumn}{\begin{column}{\sepwidth}\end{column}}
@@ -78,6 +78,14 @@ Jiayuan Ye\inst{1} }
 
 \begin{column}{\colwidth}
 
+\begin{block}{Problem Setting}
+
+\end{block}
+
+\begin{block}{SVGD Algorithm}
+
+SVGD \cite{liu2016stein}
+\end{block}
 
   \begin{block}{Experiment: Toy Example}
   \textbf{Toy Example:} 1d gaussian mixture
@@ -118,7 +126,19 @@ Jiayuan Ye\inst{1} }
 
 \begin{column}{\colwidth}
 
+\begin{block}{Summary}
+\end{block}
+
+  \begin{block}{References}
+
+    \nocite{*}
+    \footnotesize{\bibliographystyle{plain}\bibliography{poster}}
+
+  \end{block}
+  
 \end{column}
+
+\separatorcolumn
 
 \end{columns}
 \end{frame}
