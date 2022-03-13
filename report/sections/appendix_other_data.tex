@@ -1,0 +1,28 @@
+\section{Additional Experimental Details}
+
+\subsection{SVGD Algorithm on NumPyro}
+\label{ssect:svgd-npy}
+
+SVGD is an algorithm which allows us to generate samples from the posterior distribution and perform inference. As a result, the SVGD algorithm can be used in probabilistic programming language as another method to perform variational inference on. However, the original SVGD algorithm uses the posterior probability, which for more general purposes, may not be feasible. 
+
+To perform variational inference, NumPyro provides a method to track the evidence lower bound (ELBO) of some model parameter. While the SVGD algorithm in the paper attempts to minimise the true posterior, in the implementations of SVGD found the ELBO is used as the optimisation objective instead. In theory, the SVGD algorithm will still work, returning points which minimises the ELBO (rather than the true posterior) but are also more spread out. 
+
+Additionally, using the entire dataset to compute the ELBO in each timestep is too costly. As a result, in each update step, the algorithm will subsample some number of training data, and use the subset of data to compute the approximate ELBO. This is equivalent to the use of batches in stochastic gradient descent.
+
+We note that NumPyro is closely related to Pyro. However, the main difference is NumPyro uses JAX and NumPy in the backend, while Pyro uses PyTorch. Since we are not running experiments on GPUs, we chose to run the experiments on NumPyro which is more lightweight.
+
+\subsection{Bayesian Logistic Regression Tests}
+
+\input{figtabstex/tab-logist-small}
+
+\subsection{Bayesian Neural Network Tests}\label{ssect:bnn-time}
+
+In Table \ref{tab:bnn_time}, we report the average time to run each of the dataset training with each algorithm. We can see that amongst the three algorithms, the original implementation of SVGD runs the fastest.
+
+\input{figtabstex/tab-bnn-time}
+
+\label{ssect:bnn-epoch}
+
+We also show how training is affected as the algorithm runs more epochs. In Figure \ref{fig:bnn-epoch}, we show the results when an instance of the BNN training is trained for up to a certain number of epochs. 
+
+\input{figtabstex/fig-bnn-epochs}
