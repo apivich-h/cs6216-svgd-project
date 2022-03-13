@@ -1,0 +1,62 @@
+\begin{table}[]
+\centering
+\caption{Root-mean-squared error (RMSE) on test data for each algorithms on BNN tasks.} 
+\label{tab:bnn_rmse}
+\begin{tabular}{|c|ccc|}
+\hline
+ Dataset & PBP & SVGD (original) & SVGD (NumPyro)  \\
+ \hline
+boston & $3.007 \pm 0.278$ & $2.987 \pm 0.341$ & $3.290 \pm 0.369$ \\
+concrete & $5.435 \pm 0.075$ & $5.240 \pm 0.134$ & $5.567 \pm 0.158$ \\
+energy & $1.147 \pm 0.046$ & $0.890 \pm 0.032$ & $1.706 \pm 0.051$ \\
+kin8nm & $0.097 \pm 0.001$ & $0.101 \pm 0.001$ & $0.100 \pm 0.001$ \\
+naval & $0.006 \pm 0.000$ & $0.004 \pm 0.000$ & $0.003 \pm 0.000$ \\
+power & $4.132 \pm 0.046$ & $4.168 \pm 0.053$ & $4.627 \pm 0.055$ \\
+protein & $4.668 \pm 0.009$ & $4.493 \pm 0.018$ & $4.655 \pm 0.014$ \\
+wine & $0.638 \pm 0.014$ & $0.632 \pm 0.015$ & $0.651 \pm 0.014$ \\
+yacht & $0.689 \pm 0.047$ & $3.656 \pm 0.282$ & $3.546 \pm 0.195$ \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[]
+\centering
+\caption{Average log-likelihood value on test data for each algorithms on BNN tasks.} 
+\label{tab:bnn_logl}
+\begin{tabular}{|c|ccc|}
+\hline
+ Dataset & PBP & SVGD (original) & SVGD (NumPyro)  \\
+ \hline
+boston & $-2.879 \pm 0.261$ & $-2.689 \pm 0.158$ & $-2.809 \pm 0.043$ \\
+concrete & $-3.150 \pm 0.022$ & $-3.099 \pm 0.032$ & $-3.249 \pm 0.014$ \\
+energy & $-1.583 \pm 0.033$ & $-1.309 \pm 0.036$ & $-2.654 \pm 0.004$ \\
+kin8nm & $0.913 \pm 0.011$ & $0.871 \pm 0.009$ & $0.793 \pm 0.004$ \\
+naval & $3.766 \pm 0.009$ & $3.993 \pm 0.022$ & $4.125 \pm 0.003$ \\
+power & $-2.839 \pm 0.011$ & $-2.850 \pm 0.014$ & $-3.219 \pm 0.005$ \\
+protein & $-2.960 \pm 0.002$ & $-2.923 \pm 0.005$ & $-2.995 \pm 0.005$ \\
+wine & $-0.986 \pm 0.028$ & $-0.968 \pm 0.021$ & $-1.074 \pm 0.033$ \\
+yacht & $-1.129 \pm 0.038$ & $-2.741 \pm 0.065$ & $-3.350 \pm 0.004$ \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[]
+\centering
+\caption{Average time per run (in seconds) on test data for each algorithms on BNN tasks.} 
+\label{tab:bnn_time}
+\begin{tabular}{|c|ccc|}
+\hline
+ Dataset & PBP & SVGD (original) & SVGD (NumPyro)  \\
+ \hline
+boston & $25.926 \pm 0.273$ & $8.193 \pm 0.485$ & $38.177 \pm 0.537$ \\
+concrete & $47.896 \pm 0.502$ & $13.718 \pm 0.298$ & $66.020 \pm 0.974$ \\
+energy & $34.394 \pm 0.205$ & $9.857 \pm 0.330$ & $49.220 \pm 0.564$ \\
+kin8nm & $36.341 \pm 0.781$ & $10.881 \pm 0.393$ & $17.719 \pm 0.634$ \\
+naval & $52.571 \pm 0.142$ & $19.052 \pm 0.157$ & $26.480 \pm 0.299$ \\
+power & $39.195 \pm 0.217$ & $12.299 \pm 0.394$ & $18.067 \pm 0.541$ \\
+protein & $209.791 \pm 1.405$ & $89.086 \pm 0.612$ & $147.737 \pm 3.409$ \\
+wine & $29.518 \pm 0.078$ & $9.160 \pm 0.034$ & $16.557 \pm 0.170$ \\
+yacht & $6.907 \pm 0.064$ & $1.757 \pm 0.076$ & $7.763 \pm 0.174$ \\
+\hline
+\end{tabular}
+\end{table}
