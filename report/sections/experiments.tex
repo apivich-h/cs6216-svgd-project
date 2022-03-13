@@ -4,33 +4,37 @@ In this section, we report our reproduction effort and verification of the exper
 \subsection{Toy Example}
 \input{figtabstex/fig-toy1d}
 
-We first reproduced the toy example about 1D Gaussian mixture mentioned in the paper. The task is to use SVGD to approximate a target distribution with PDF $p(x) = \frac{1}{3} N(x; -2, 1) + \frac{1}{3} N(x; 2, 1)$. The particles are initialized by an i.i.d. sample from the distribution $N(-10, 1)$, which is far away from the mode of the target distribution. We use 100 particles and 500 iterations with step size 0.25. 
+\noindent\textbf{Illustration of the Convergence of SVGD}
 
-As shown in figure \ref{fig:toy1dgaussian}, SVGD effectively recovered the distribution.
+We first reproduced the toy example about 1D Gaussian mixture mentioned in the paper. The task is to use SVGD to approximate a target distribution with PDF $p(x) = \frac{1}{3} N(x; -2, 1) + \frac{2}{3} N(x; 2, 1)$. The particles are initialized by an i.i.d. sample from the distribution $N(-10, 1)$, which is far away from the mode of the target distribution. We use 100 particles and 500 iterations with step size 0.25. We shown in figure \ref{fig:toy1dgaussian}, that SVGD effectively recovered the mixture distribution in $500$ epochs.
+
+We perform additional experiments for two other Gaussian mixture distribution: $\frac{1}{3} N(x; -3, 1) + \frac{2}{3} N(x; 3, 1)$ (where the two modes are farther apart) and $\frac{2}{3} N(x; -3, 1) + \frac{2}{3} N(x; 3, 1)$ (where the smaller mode is farther from the initialization distribution). We see that when the two modes are far apart from each other, the SVGD algorithm converges more slowly, as in Figure 1. (3). Moreover, when the smaller mode are far away from the initialization distribution, the particles in the SVGD algorithm has difficulty visiting the smaller mode, within 500 iterations. However, after we replaces the negative log likelihood function in Algorithm ~\ref{alg:svgd}, as applied in NumPyro's implementation of SVGD, the particles converge much faster and only needs 100 iterations, as in Figure 1. (5). 
+
+\noindent\textbf{Illustration of the Performance and Scalability of SVGD}
+
+The paper also found that SVGD performs better than Monte Carlo sampling on some expectation estimation tasks (smaller MSE). We implement this experiment based on our implementation of the toy example. We use both SVGD and MC to get samples/particles in the same size and check averaged MSE of three estimators estimating $E[X]$, $E[X^2]$, and $E[cos(\omega x + b)]$ respectively. We follow the same setting as in the original paper, except that we calculate averaged MSE over 400 runs for each setting. The results confirmed the claim in the paper, as shown in figure \ref{fig:toy1dmc}.
 
 \input{figtabstex/fig-toy1dmc}
+
+We observe that while SVGD performs better than MC, it is significantly slower. To know how scalable it is with large number of particles, we did an additional experiment (which doesn't exist in the original paper) to plot execution time of using different number of particles to match an unknown multivariate Gaussian in 1000 iterations. We implement two versions of the code, one using the original SVGD implementation in the paper, other using NumPyro's SteinVI API with ELBO loss. We vary the number of particles from 100 to 1600. 
 
 \input{figtabstex/fig-timingparticles}
 
 \subsection{Bayesian Logistic Regression}
 \subsubsection{Small scale}
-We attempt to test the SVGD algorithm in small-scale (less than $10^4$ data points) logistic regression tasks. We aim to construct a model which is able to predict a binary label of some training data. We run the SVGD algorithm as implemented on NumPyro against the No U-Turn Sampler (NUTS) algorithm. Both of the algorithms have implementations on NumPyro. Therefore for our experiments, we are able to construct a model representing the logistic regression problem, and let NumPyro perform the inference process using the algorithms specified. The result is shown in Figure \ref{fig:logist_small}.
+We attempt to test the SVGD algorithm in small-scale (less than $10^4$ data points) logistic regression tasks. We aim to construct a model which is able to predict a binary label of some training data. We run the SVGD algorithm as implemented on NumPyro against the No U-Turn Sampler (NUTS) algorithm \cite{nuts}. Both of the algorithms have implementations on NumPyro. Therefore for our experiments, we are able to construct a model representing the logistic regression problem, and let NumPyro perform the inference process using the algorithms specified. The result is shown in Figure \ref{fig:logist_small}. We can see that the performance is about the same between both algorithms, but SVGD requires fewer particles to represent the distribution. 
 
-We can see that the performance is about the same between both algorithms. 
+\input{figtabstex/fig-logisticsvgdnuts}
 
 \subsubsection{Large scale}
 We also attempt to compare the performance of SVGD with other optimization algorithms on large scale Bayesian logistic regression in terms of test accuracy with respect to the number of iterations and particle size. We use the same dataset the original paper used, which is the binary Covertype dataset. The dataset contains 581012 data entries and each data point has 54 features. The binary Covertype dataset is a special variant of the original Covertype dataset which has 7 output classes. The binary version combines two output classes out of the 7 into class 1, and treats the rest classes as class 0. This dataset is very large even for current computers. If we do not use stochastic gradient descent and load all data in one batch, we would most likely encounter memory overflow. 
 
-The baseline we choose is stochastic gradient Langevin dynamics (SGLD), where a noise term is added to the gradient in each step. In particular, we use the parallel version of SGLD. 
-
-
-
-\input{figtabstex/fig-logisticsvgdnuts}
-
+The baseline we choose is stochastic gradient Langevin dynamics (SGLD) \cite{ref_sgld}, where a noise term is added to the gradient in each step. In particular, we use the parallel version of SGLD. Fig \ref{fig:covertype} shows the evolution of test accuracy against training iterations and number of particles. Fig \ref{fig:acc_iter} compares the test accuracy between SVGD and SGLD when both of them are training for 2 epochs (roughly 18,000 iterations). SVGD consistently outperforms SGLD, achieving higher accuracy after 1000 iterations than SGLD after 18,000 iterations. However, from our experiments, the training using SVGD is far noisier than SGLD, which was not observed in the original experiments. Fig \ref{fig:acc_par} compares the test accuracy between SVGD and SGLD when the particle size varies. For each particle size, we conduct 50 independent trials and report the average performance. Similar to Fig \ref{fig:acc_iter}, the curves are not as smooth as the original plot. However, the relative performance still holds: SVGD is more particle efficient than SGLD, which means we can afford to reduce the number of particles to save more time in training.
+\input{figtabstex/fig-covertype}
 
 \subsection{Bayesian Neural Network}
 
-A Bayesian Neural Network (BNN) is a neural network where rather than finding the single optimal estimation for the model weights, we perform inference on the model weights to find the .
+A Bayesian Neural Network (BNN) is a neural network where rather than finding the single optimal estimation for the model weights, we perform inference to find a posterior distribution for the model weights.
 
 For the experiments, we train a small BNN on a set of regression tasks. We follow the setup from the paper and use the UCI dataset. We run tests on the SVGD algorithm as implemented by the authors of the original paper and also the implementation on NumPyro, and also on the probabilistic back-propagation (PBP) algorithm. A change that we made was to run each algorithms using the same subsampling size of 100 and ran each algorithms for up to 50 or 200 epochs, depending on the training data size. The other hyperparameters were kept the same as the original code. We report the results in Tables \ref{tab:bnn_rmse} and \ref{tab:bnn_logl}. 
 
@@ -38,7 +42,7 @@ For the experiments, we train a small BNN on a set of regression tasks. We follo
 
 In our results, we were able to show that SVGD performs better than the PBP algorithm. In most test cases used, we are able to show that the predictions from the SVGD algorithm is more accurate than that from the PBP algorithm, as measured by the root-mean-squared error of the prediction. 
 
-However, we found that the SVGD algorithm implementation on NumPyro was not able to replicate the performance that the original SVGD algorithm was able to. This could be due to the fact that unlike the SVGD algorithm from the original paper, the SVGD algorithm on NumPyro is minimising the loss based on the ELBO value, and not the true posterior probability. We also find that the two implementations require different tunings of the hyperparameters to obtain the best performances. However, to test if this is the case, further tests would need to be ran.
+However, we found that the SVGD algorithm implementation on NumPyro was not able to replicate the performance that the original SVGD algorithm was able to. This could be due to the fact that unlike the SVGD algorithm from the original paper, the SVGD algorithm on NumPyro is minimizing the loss based on the ELBO value, and not the true posterior probability. We also find that the two implementations require different tunings of the hyperparameters to obtain the best performances. However, to test if this is the case, further tests would need to be ran.
 
 We also report the amount of time required to run the algorithms in Table \ref{tab:bnn_time}. We can see that the original SVGD algorithm requires the least amount of time to compute, followed by the PBP algorithm, then the NumPyro implementation of SVGD. The reason for the longer time required for the SVGD algorithm is in the estimation of the ELBO value, which requires simulating a parameter value multiple times for expected value computation. Reducing the number of simulation for this estimate will reduce the time, but also reduce the accuracy of the ELBO estimate. However, we do note that the estimation could have been ran in parallel, which we have not done for our tests.
 

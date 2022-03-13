@@ -13,6 +13,8 @@
 \usepackage{booktabs}
 \usepackage{svg}
 \usepackage{pgfplots}
+\usepackage{caption}
+\usepackage{subcaption}
 
 % for circling parts
 \usepackage{graphicx}
@@ -88,6 +90,9 @@ SVGD \cite{liu2016stein}
 \end{block}
 
   \begin{block}{Experiment: Toy Example}
+  \begin{itemize}
+      \item Target distribution: one-dimensional Gaussian mixture.
+  \end{enumerate}
   \textbf{Toy Example:} 1d gaussian mixture
     \begin{itemize}
      \item xxx
@@ -126,6 +131,15 @@ SVGD \cite{liu2016stein}
 
 \begin{column}{\colwidth}
 
+  \begin{block}{Experiment: Bayesian Logistic Regression on Large Datasets}
+  \textbf{Bayesian Linear Regression} on binary Covertype dataset 
+    \begin{itemize}
+     \item Compare the test accuracy between SVGD \cite{liu2016stein} and SGLD \cite{welling2011bayesian}
+     \item Visualize the effect of particle size on test accuracy
+    \end{itemize}
+    \input{figtabstex/fig-covertype}
+  \end{block}
+  
 \begin{block}{Summary}
 \end{block}
 
