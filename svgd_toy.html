@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.19.1/full/pyodide.js"></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js'></script>
+    <style>
+      #code {
+        width: 99%;
+        height: 250px;
+      }
+      #output {
+        width: 99%;
+        height: 250px;
+      }
+      #run-btn,
+      #showcode-btn {
+        width: 90px;
+        height: 40px;
+      }
+      #histogram {
+        width: 600px;
+        height: 400px;
+      }
+      .chart-wrapper {
+        border: 1px solid blue;
+        height: 400px;
+        width: 800px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h2>
+      SVGD Gaussian Mixture Toy Example in browser
+    </h2>
+    <textarea id="code" value="sum([1, 2, 3, 4, 5])" style="display: none;" /></textarea>
+    <button id="showcode-btn" onclick="toggleVisible()">ToggleCode</button>
+    <button id="run-btn" onclick="evaluatePython()">Run</button>
+    <br />
+    <br />
+    <div>Output:</div>
+    <textarea id="output" disabled></textarea>
+    <input id="plot-idx" type="range" disabled>
+    <div class="chart-wrapper"><canvas id="histogram"></canvas></div> 
+<script>
+const output = document.getElementById("output");
+const code = document.getElementById("code");
+const showcode = document.getElementById("showcode-btn");
+const plotsel = document.getElementById("plot-idx");
+function toggleVisible() {
+  code.style.display = code.style.display == "block" ? "none" : "block";
+}
+
+code.value = `
+import numpy as np
+from scipy.spatial.distance import pdist, squareform
+
+class SVGD():
+
+    def __init__(self):
+        pass
+    
+    def svgd_kernel(self, theta, h = -1):
+        sq_dist = pdist(theta)
+        pairwise_dists = squareform(sq_dist)**2
+        if h < 0: # if h < 0, using median trick
+            h = np.median(pairwise_dists)  
+            h = np.sqrt(0.5 * h / np.log(theta.shape[0]+1))
+
+        # compute the rbf kernel
+        Kxy = np.exp( -pairwise_dists / h**2 / 2)
+
+        dxkxy = -np.matmul(Kxy, theta)
+        sumkxy = np.sum(Kxy, axis=1)
+        for i in range(theta.shape[1]):
+            dxkxy[:, i] = dxkxy[:,i] + np.multiply(theta[:,i],sumkxy)
+        dxkxy = dxkxy / (h**2)
+        return (Kxy, dxkxy)
+    
+ 
+    def update(self, x0, lnprob, n_iter = 1000, stepsize = 1e-3, bandwidth = -1, alpha = 0.9, debug = False, callback=None):
+        # Check input
+        if x0 is None or lnprob is None:
+            raise ValueError('x0 or lnprob cannot be None!')
+        
+        theta = np.copy(x0) 
+        
+        # adagrad with momentum
+        fudge_factor = 1e-6
+        historical_grad = 0
+        for iter in range(n_iter):
+            if debug and (iter+1) % 1000 == 0:
+                print('iter ' + str(iter+1))
+            
+            lnpgrad = lnprob(theta)
+            # calculating the kernel matrix
+            kxy, dxkxy = self.svgd_kernel(theta, h = -1)  
+            grad_theta = (np.matmul(kxy, lnpgrad) + dxkxy) / x0.shape[0]  
+            
+            # adagrad 
+            if iter == 0:
+                historical_grad = historical_grad + grad_theta ** 2
+            else:
+                historical_grad = alpha * historical_grad + (1 - alpha) * (grad_theta ** 2)
+            adj_grad = np.divide(grad_theta, fudge_factor+np.sqrt(historical_grad))
+            theta = theta + stepsize * adj_grad 
+            
+            if callback is not None:
+                callback(iter+1, theta)
+
+        return theta
+
+
+# ===================
+import math
+
+class Mixture1d:
+    def __init__(self, w1, mu1, sigma1, w2, mu2, sigma2):
+        self.name = "gaussian"
+        self.w1 = w1
+        self.mu1 = mu1
+        self.sigma1 = sigma1
+        self.w2 = w2
+        self.mu2 = mu2
+        self.sigma2 = sigma2
+
+    def dlnprob_single(self, x):
+        a,b,c,d,e,f = self.w1, self.mu1, self.sigma1, self.w2, self.mu2, self.sigma2
+        sqrt = math.sqrt
+        pi = math.pi
+        E = math.e
+        return (-((a * E**(-((-b + x)**2/(2 * c**2))) * (-b + x))/(c**3 * sqrt(2 * pi))) - (
+            d * E**(-((-e + x)**2/(2 * f**2))) * (-e + x))/(f**3 * sqrt(2 * pi)))/((
+            a * E**(-((-b + x)**2/(2 * c**2))))/(c * sqrt(2 * pi)) + (
+            d * E**(-((-e + x)**2/(2 * f**2))))/(f * sqrt(2 * pi)))
+    
+    def dlnprob(self, points):
+        func = lambda x : self.dlnprob_single(x)
+        vfunc = np.vectorize(func)
+        return vfunc(points)
+
+
+def assertions():
+    model = Mixture1d(1/3, -2, 1, 2/3, 2, 1)
+    almost_eq = lambda  x, y: abs(x - y) < 1e-5
+    assert almost_eq(model.dlnprob_single(1), 0.963701)
+    assert almost_eq(model.dlnprob_single(2), -0.000670813)
+    assert almost_eq(model.dlnprob_single(-1), -0.858653)
+    assert almost_eq(model.dlnprob_single(-2), 0.0026819)
+
+
+
+
+assertions()
+np.random.seed(5432)
+
+w1 = 1/3
+mu = 2.0
+mu1 = -mu
+mu2 = mu
+w2 = 2/3
+sigma1 = 1.0
+sigma2 = 1.0
+model = Mixture1d(w1, mu1, sigma1, w2, mu2, sigma2)
+
+x0 = np.random.normal(-10,1,[100,1])
+x_after = x0
+
+step_size = 0.1
+# step_size = 0.25
+check_iters = [0, 50, 75, 100, 150, 500]
+print("check_iters:", check_iters)
+
+middle_logs = [];
+middle_results = [];
+def save_on_check_iter_func2(iter_idx, theta):
+    if iter_idx in check_iters:
+        idx = check_iters.index(iter_idx)
+        print(idx, iter_idx)
+        logline = f"svgd ({iter_idx}th iteration): " + str(np.mean(theta, axis=0))
+        print(logline)      
+        middle_logs.append(logline)
+        middle_results.append([x[0] for x in theta])
+
+
+save_on_check_iter_func = save_on_check_iter_func2
+save_on_check_iter_func(0, x_after)
+x_after = SVGD().update(x0, model.dlnprob, n_iter=check_iters[-1], stepsize=step_size, callback=save_on_check_iter_func)
+[middle_logs, middle_results]
+`;
+
+async function addToOutput(s) {
+  output.value += s + "\n";
+}
+
+output.value = "Initializing...\n";
+// init Pyodide
+async function main() {
+  let pyodide = await loadPyodide({
+    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.19.1/full/",
+  });
+  output.value += "Runtime loaded.\n";
+  await pyodide.loadPackage("numpy");
+  output.value += "library 1/2 loaded\n";
+  await pyodide.loadPackage("scipy");
+  output.value += "library 2/2 loaded\n";
+  return pyodide;
+}
+let pyodideReadyPromise = main();
+
+async function evaluatePython() {
+  let pyodide = await pyodideReadyPromise;
+  try {
+    await addToOutput("========= start running code =========");
+    let output = pyodide.runPython(code.value);
+    let js_output = output.toJs();
+    await addToOutput("========= end running code =========");
+    console.log(js_output);
+    let [loglines, data] = js_output;
+    for (let line of loglines) {
+      addToOutput(line);
+    }
+    histogram_data(data);
+    await addToOutput("========= end of printing result =========");
+  } catch (err) {
+    await addToOutput(err);
+  }
+}
+
+function histogram(data, min, max, size) {
+  const intval = (max - min) / size;
+  const histogram = new Array(size+1).fill(0);
+  for (const item of data) {
+    if (item <= min) continue;
+    if (item >= max) continue;
+    histogram[Math.floor((item - min) / intval)]++;
+  }
+  let bins = [];
+  for (let i = 0; i < size; i++) bins.push([min + i * intval, min + (i + 1) * intval]);
+  return [bins, histogram.slice(0, size)];
+}
+
+let plotsel_onchange_handler = () => {
+  let sel = plotsel.value;
+  let data = window._last_data[sel];
+  const ctx = document.getElementById('histogram').getContext('2d');
+
+  let [bins, hist_data] =  histogram(data, -12, 12, 48);
+  let labels = bins.map((p) => "" +  (p[0] + p[1])/2 + "");
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'histogram',
+        data: hist_data,
+        backgroundColor: 'green',
+      }]
+    },
+    options: {
+      scales: {
+        xAxes: [{
+          display: false,
+          barPercentage: 1.3,
+          ticks: {
+            max: 3,
+          }
+        }, {
+          display: true,
+          ticks: {
+            autoSkip: false,
+            max: 4,
+          }
+        }],
+        yAxes: [{
+          ticks: {
+            beginAtZero: true
+          }
+        }]
+      }
+    }
+  });
+};
+plotsel.addEventListener("change", plotsel_onchange_handler);
+
+function histogram_data(data) {
+  window._last_data = data;
+  plotsel.min = 0;
+  plotsel.max = data.length - 1;
+  plotsel.disabled = false;
+  plotsel.step = 1;
+  plotsel.value = 0;
+  plotsel_onchange_handler();
+}
+</script>
+  </body>
+</html>
