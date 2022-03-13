@@ -187,35 +187,41 @@ for est_func_name in est_function_dict:
         results_list.append([sample_size, mse])
 
 import json
-with open("./output/mixture_fig2.json", 'w') as f:
+with open(f"./output/mixture_fig2_{step_size}.json", 'w') as f:
   json.dump(all_result_dict, f, indent=2)
 
 # %%
 import json
-with open("./output/mixture_fig2.json", 'r') as f:
-  all_result_dict = json.load(f)
+file1 = f"./output/mixture_fig2_{step_size}.json"
+outfile1 = '../../figs/toy-figure2.png'
 
-import matplotlib.pyplot as plt
-fig_keys = list(est_true_value_dict.keys())
-num_plots = len(fig_keys)
-fig = plt.figure(figsize=(4 * num_plots, 3))
-axs = fig.subplots(nrows=1, ncols=num_plots, sharex=True, sharey=False)
-for i, key in enumerate(fig_keys):
-  estimate_dict = all_result_dict[key]
-  ax = axs[i]
-  ax.set_title(f'Estimating {key}')
-  ax.set_yscale('log')
-  ax.set_xscale('log')
-  for method_key in estimate_dict:
-    estimate_mse_data = estimate_dict[method_key]
-    X, Y = np.array(estimate_mse_data).T
-    ax.plot(X, Y,  marker='o')
-  ax.legend(list(estimate_dict.keys()))
+file2 = "./output/mixture_fig2_merged.json"
+outfile2 = '../../figs/toy-figure2-merged.png'
 
-outfigpath1 = './output/figure2.png'
-outfigpath2 = '../../figs/toy-figure2.png'
-print("saving fig to:", outfigpath1)
-fig.savefig(outfigpath1)
-print("saving fig to:", outfigpath2)
-fig.savefig(outfigpath2)
+def plot_file(filename, outfile):
+  with open(filename, 'r') as f:
+    all_result_dict = json.load(f)
+
+  import matplotlib.pyplot as plt
+  fig_keys = list(est_true_value_dict.keys())
+  num_plots = len(fig_keys)
+  fig = plt.figure(figsize=(4 * num_plots, 3))
+  axs = fig.subplots(nrows=1, ncols=num_plots, sharex=True, sharey=False)
+  for i, key in enumerate(fig_keys):
+    estimate_dict = all_result_dict[key]
+    ax = axs[i]
+    ax.set_title(f'Estimating {key}')
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+    for method_key in estimate_dict:
+      estimate_mse_data = estimate_dict[method_key]
+      X, Y = np.array(estimate_mse_data).T
+      ax.plot(X, Y,  marker='o')
+    ax.legend(list(estimate_dict.keys()))
+
+  print("saving fig to:", outfile)
+  fig.savefig(outfile)
+
+plot_file(file1, outfile1)
+plot_file(file2, outfile2)
 # %%
