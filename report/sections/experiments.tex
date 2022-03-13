@@ -2,64 +2,15 @@
 In this section, we report our reproduction effort and verification of the experimental results in the paper.
 
 \subsection{Toy Example}
-
-\begin{figure}[!htbp]
-    \centering
-    \begin{tabular}{@{}c@{}}
-        \includegraphics[width=\textwidth]{figs/toy-figure1_step0.1_mu2.0_w0.33_gaussian.png} \\
-        \small (1) StepSize = 0.1, 500 iterations, $\mu = \pm 2$, $(w_1, w_2) = (0.33, 0.67)$
-    \end{tabular}
-    
-    \begin{tabular}{@{}c@{}}
-        \includegraphics[width=\textwidth]{figs/toy-figure1.png} \\
-        \small (2) StepSize = 0.25, 500 iterations, $\mu = \pm 2$, $(w_1, w_2) = (0.33, 0.67)$
-    \end{tabular}
-    %\vspace{\floatsep}
-    
-    \begin{tabular}{@{}c@{}}
-        \includegraphics[width=\textwidth]{figs/toy-figure1_step0.25_mu3.0_w0.33_gaussian.png} \\
-        \small (3) StepSize = 0.25, 500 iterations, $\mu = \pm 3$, $(w_1, w_2) = (0.33, 0.67)$
-    \end{tabular}
-    
-    \begin{tabular}{@{}c@{}}
-        \includegraphics[width=\textwidth]{figs/toy-figure1_step0.25_mu3.0_w0.67_gaussian.png} \\
-        \small (4) StepSize = 0.25, 500 iterations, $\mu = \pm 3$, $(w_1, w_2) = (0.67, 0.33)$
-    \end{tabular}
-    
-    % \begin{tabular}{@{}c@{}}
-    %     \includegraphics[width=\textwidth]{figs/toy-figure1_step0.25_mu4.0_w0.33_gaussian.png} \\
-    %     \small (5) StepSize = 0.25, $\mu = \pm 4$, $(w_1, w_2) = (0.33, 0.67)$
-    % \end{tabular}
-    
-    \begin{tabular}{@{}c@{}}
-        \includegraphics[width=\textwidth]{figs/toy-figure1-numpyro.png} \\
-        \small (5) ELBO Loss (NumPyro) StepSize = 0.1, 100 iters, $\mu = \pm 3$, $(w_1, w_2) = (0.67, 0.33)$
-    \end{tabular}
-     
-    \caption{Toy example with 1D Gaussian mixture. Particle densities are visualized by KDE.}
-    \label{fig:toy1dgaussian}
-\end{figure}
+\input{figtabstex/fig-toy1d}
 
 We first reproduced the toy example about 1D Gaussian mixture mentioned in the paper. The task is to use SVGD to approximate a target distribution with PDF $p(x) = \frac{1}{3} N(x; -2, 1) + \frac{1}{3} N(x; 2, 1)$. The particles are initialized by an i.i.d. sample from the distribution $N(-10, 1)$, which is far away from the mode of the target distribution. We use 100 particles and 500 iterations with step size 0.25. 
 
 As shown in figure \ref{fig:toy1dgaussian}, SVGD effectively recovered the distribution.
 
-\begin{figure}[!htbp]
-    \centering
-    \includegraphics[width=\textwidth]{figs/toy-figure2-merged.png}
-    \caption{Comparison between MC and SVGD on simple mean estimation tasks. }
-    \label{fig:my_label}
-\end{figure}
+\input{figtabstex/fig-toy1dmc}
 
-\begin{figure}[!htbp]
-    \centering
-    \begin{tabular}{@{}cc@{}}
-            \includegraphics[width=0.45\textwidth]{figs/toy-timing-particles.png} & \includegraphics[width=0.45\textwidth]{figs/toy-timing-particles.png}\\
-        \small Original SVGD & NumPyro (ELBO Loss) \\
-    \end{tabular}
-    \caption{Timing vs particles }
-    \label{fig:my_label}
-\end{figure}
+\input{figtabstex/fig-timingparticles}
 
 \subsection{Bayesian Logistic Regression}
 \subsubsection{Small scale}
@@ -74,12 +25,8 @@ The baseline we choose is stochastic gradient Langevin dynamics (SGLD), where a 
 
 
 
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\textwidth]{figs/logistic_svgd_nuts.png}
-    \caption{Comparison of accuracy (left) and log-likelihood (right) obtained by NUTS and SVGD algorithm on small-scale logistic regression dataset. The dotted line represents the situation where both algorithms perform as well was each other.}
-    \label{fig:logist_small}
-\end{figure}
+\input{figtabstex/fig-logisticsvgdnuts}
+
 
 \subsection{Bayesian Neural Network}
 
