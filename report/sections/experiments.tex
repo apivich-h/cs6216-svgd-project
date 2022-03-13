@@ -12,29 +12,34 @@ As shown in figure \ref{fig:toy1dgaussian}, SVGD effectively recovered the distr
     \centering
     \begin{tabular}{@{}c@{}}
         \includegraphics[width=\textwidth]{figs/toy-figure1_step0.1_mu2.0_w0.33_gaussian.png} \\
-        \small (1) StepSize = 0.1, $\mu = \pm 2$, $(w_1, w_2) = (0.33, 0.67)$
+        \small (1) StepSize = 0.1, 500 iterations, $\mu = \pm 2$, $(w_1, w_2) = (0.33, 0.67)$
     \end{tabular}
     
     \begin{tabular}{@{}c@{}}
         \includegraphics[width=\textwidth]{figs/toy-figure1.png} \\
-        \small (2) StepSize = 0.25, $\mu = \pm 2$, $(w_1, w_2) = (0.33, 0.67)$
+        \small (2) StepSize = 0.25, 500 iterations, $\mu = \pm 2$, $(w_1, w_2) = (0.33, 0.67)$
     \end{tabular}
     %\vspace{\floatsep}
     
     \begin{tabular}{@{}c@{}}
         \includegraphics[width=\textwidth]{figs/toy-figure1_step0.25_mu3.0_w0.33_gaussian.png} \\
-        \small (3) StepSize = 0.25, $\mu = \pm 3$, $(w_1, w_2) = (0.33, 0.67)$
+        \small (3) StepSize = 0.25, 500 iterations, $\mu = \pm 3$, $(w_1, w_2) = (0.33, 0.67)$
     \end{tabular}
     
     \begin{tabular}{@{}c@{}}
         \includegraphics[width=\textwidth]{figs/toy-figure1_step0.25_mu3.0_w0.67_gaussian.png} \\
-        \small (4) StepSize = 0.25, $\mu = \pm 3$, $(w_1, w_2) = (0.67, 0.33)$
+        \small (4) StepSize = 0.25, 500 iterations, $\mu = \pm 3$, $(w_1, w_2) = (0.67, 0.33)$
     \end{tabular}
     
     % \begin{tabular}{@{}c@{}}
     %     \includegraphics[width=\textwidth]{figs/toy-figure1_step0.25_mu4.0_w0.33_gaussian.png} \\
     %     \small (5) StepSize = 0.25, $\mu = \pm 4$, $(w_1, w_2) = (0.33, 0.67)$
     % \end{tabular}
+    
+    \begin{tabular}{@{}c@{}}
+        \includegraphics[width=\textwidth]{figs/toy-figure1.png} \\
+        \small (5) ELBO Loss (NumPyro) StepSize = 0.1, 100 iters, $\mu = \pm 3$, $(w_1, w_2) = (0.67, 0.33)$
+    \end{tabular}
      
     \caption{Toy example with 1D Gaussian mixture. Particle densities are visualized by KDE.}
     \label{fig:toy1dgaussian}
@@ -51,6 +56,8 @@ As shown in figure \ref{fig:toy1dgaussian}, SVGD effectively recovered the distr
 \subsubsection{Small scale}
 We attempt to test the SVGD algorithm in small-scale logistic regression tasks. We aim to construct a model which is able to predict a binary label of some training data. We run the SVGD algorithm as implemented on NumPyro against the No U-Turn Sampler (NUTS) algorithm. We model the logistic regression problem as a model in NumPyro, and simply perform inference on them but using NUTS and SVGD. The result is shown in Figure \ref{fig:logist_small}.
 
+We can see that the performance is about the same between both algorithms.
+
 \subsubsection{Large scale}
 We also attempt to compare the performance of SVGD with other optimization algorithms on large scale Bayesian logistic regression in terms of test accuracy with respect to the number of iterations and particle size. We use the same dataset the original paper used, which is the binary Covertype dataset. The dataset contains 581012 data entries and each data point has 54 features. The binary Covertype dataset is a special variant of the original Covertype dataset which has 7 output classes. The binary version combines two output classes out of the 7 into class 1, and treats the rest classes as class 0. This dataset is very large even for current computers. If we do not use stochastic gradient descent and load all data in one batch, we would most likely encounter memory overflow. 
 
@@ -61,7 +68,7 @@ The baseline we choose is stochastic gradient Langevin dynamics (SGLD), where a 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{figs/logistic_svgd_nuts.png}
-    \caption{Caption}
+    \caption{Comparison of accuracy (left) and log-likelihood (right) obtained by NUTS and SVGD algorithm on small-scale logistic regression dataset. The dotted line represents the situation where both algorithms perform as well was each other.}
     \label{fig:logist_small}
 \end{figure}
 
@@ -73,7 +80,7 @@ For the experiments, we train a small BNN on a set of regression tasks. We follo
 
 \begin{table}[]
 \centering
-\caption{Root-mean-squared error (RMSE) on test data for each algorithms} 
+\caption{Root-mean-squared error (RMSE) on test data for each algorithms on BNN tasks.} 
 \label{tab:bnn_rmse}
 \begin{tabular}{|c|ccc|}
 \hline
@@ -94,7 +101,7 @@ yacht & $0.689 \pm 0.047$ & $3.656 \pm 0.282$ & $3.546 \pm 0.195$ \\
 
 \begin{table}[]
 \centering
-\caption{Average log-likelihood value on test data for each algorithms} 
+\caption{Average log-likelihood value on test data for each algorithms on BNN tasks.} 
 \label{tab:bnn_logl}
 \begin{tabular}{|c|ccc|}
 \hline
@@ -115,7 +122,7 @@ yacht & $-1.129 \pm 0.038$ & $-2.741 \pm 0.065$ & $-3.350 \pm 0.004$ \\
 
 In our results, we were able to replicate the superior performance of the SVGD algorithm over the PBP algorithm. In most test cases used, we are able to show that the predictions from the SVGD algorithm is more accurate than that from the PBP algorithm, as measured by the root-mean-squared error of the prediction. 
 
-However, we found that the SVGD algorithm implementation on NumPyro was not able to replicate the performance that the original SVGD algorithm was able to. This could be due to the fact that unlike the SVGD algorithm from the original paper, the SVGD algorithm on NumPyro is minimising the loss based on the ELBO value, and not the true posterior probability. However, to test if this is the 
+However, we found that the SVGD algorithm implementation on NumPyro was not able to replicate the performance that the original SVGD algorithm was able to. This could be due to the fact that unlike the SVGD algorithm from the original paper, the SVGD algorithm on NumPyro is minimising the loss based on the ELBO value, and not the true posterior probability. However, to test if this is the case, further tests would need to be ran.
 
 \begin{figure}[h]
     \centering
