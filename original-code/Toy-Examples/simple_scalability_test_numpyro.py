@@ -82,7 +82,7 @@ if "redo_timing" in sys.argv:
 
 
 timing_data = np.loadtxt("./simple_scalability_test_timing_numpyro_elbo.csv", delimiter=",")
-dropped_timing_data = timing_data[1:]
+dropped_timing_data = timing_data[0:]
 mean_data = np.mean(dropped_timing_data, axis=0)
 print(mean_data)
 div100_particle_sizes = np.array(timing_particle_sizes)/100
