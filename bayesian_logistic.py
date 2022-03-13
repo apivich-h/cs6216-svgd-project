@@ -26,9 +26,9 @@ def generate_gmm(dims=2, count=500, seed=None):
     for i in range(count):
         y = np.random.binomial(1, 1 / 3)
         if y == 0:
-            x = np.random.multivariate_normal(centre * np.ones(dims), np.identity(dims))
+            x = np.random.normal(centre, 1., size=(dims,))
         else:
-            x = np.random.multivariate_normal(- centre * np.ones(dims), np.identity(dims))
+            x = np.random.normal(-centre, 1., size=(dims,))
         xs[i] = x
         ys[i] = y
 

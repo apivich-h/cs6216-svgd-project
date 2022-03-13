@@ -1,0 +1,146 @@
+\documentclass[final]{beamer}
+
+% ====================
+% Packages
+% ====================
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[size=a0,scale=1.0]{beamerposter}
+\usetheme{gemini}
+\usecolortheme{ITNU}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{svg}
+\usepackage{pgfplots}
+
+% for circling parts
+\usepackage{graphicx}
+\usepackage[usestackEOL]{stackengine}
+\usepackage{xcolor}
+\def\calloutsym{%
+  \ensurestackMath{%
+  \scalebox{3.5}{\color{red}\stackunder[0pt]{\bigcirc}{\downarrow}}}%
+}
+\newcommand\callouttext[1]{%
+  \def\stacktype{S}\renewcommand\useanchorwidth{T}\stackText%
+  \stackunder{\calloutsym}{\scriptsize\Longstack{#1}}\stackMath%
+}
+\newcommand\callout[3][1.5pt]{%
+  \def\stacktype{L}\stackMath\stackunder[#1]{#2}{\callouttext{#3}}%
+}
+
+% ====================
+% Lengths
+% ====================
+
+% If you have N columns, choose \sepwidth and \colwidth such that
+% (N+1)*\sepwidth + N*\colwidth = \paperwidth
+\newlength{\sepwidth}
+\newlength{\colwidth}
+\setlength{\sepwidth}{0.001\paperwidth}
+\setlength{\colwidth}{0.3\paperwidth}
+
+\newcommand{\separatorcolumn}{\begin{column}{\sepwidth}\end{column}}
+
+% ====================
+% Title
+% ====================
+
+\title{CS6216 Project Report: Stein Variational Gradient Descent}
+
+\author{Apivich Hemachandra\inst{1} \and
+Jiashu Tao\inst{1} \and
+Bo Wang\inst{1}   \and
+Jiayuan Ye\inst{1} }
+\institute{Department of Computer Science,  National University of Singapore\\{\small\textsuperscript{*}Alphabetical Order.}}
+
+% remove this section if poster is for inhouse project
+\addtobeamertemplate{headline}{} 
+{
+    \begin{tikzpicture}[remember picture,overlay]
+    % tweak these sizes according to the logo of the company:
+    % xshift, yshift, height
+    \node [anchor=north west, inner sep=3cm] at ([xshift=-1.5cm,yshift=-0.8cm]current page.north west)     {\includegraphics[height=3cm]{imgs/logo.png}}; 
+    \end{tikzpicture} 
+}
+
+% ====================
+% Body
+% ====================
+
+\begin{document}
+
+\begin{frame}[t]
+\begin{columns}[t]
+
+\separatorcolumn
+
+\begin{column}{\colwidth}
+
+\begin{block}{Problem Setting}
+
+\end{block}
+
+\begin{block}{SVGD Algorithm}
+
+SVGD \cite{liu2016stein}
+\end{block}
+
+  \begin{block}{Experiment: Toy Example}
+  \textbf{Toy Example:} 1d gaussian mixture
+    \begin{itemize}
+     \item xxx
+    \end{itemize}
+    \input{figtabstex/fig-toy1d}
+    \input{figtabstex/fig-toy1dmc}
+  \end{block}
+  
+
+
+\end{column}
+
+\separatorcolumn
+
+\begin{column}{\colwidth}
+
+  \begin{block}{Experiment: Execution Time vs \#Particles}
+  \textbf{Toy Example:} Estimating mean of multivariate Gaussian
+    \begin{itemize}
+     \item xxx
+    \end{itemize}
+     \input{figtabstex/fig-timingparticles}
+  \end{block}
+
+\begin{block}{Experiment: Linear Regression}
+  \textbf{Linear Regression:} Linear Regression
+    \begin{itemize}
+     \item xxx
+    \end{itemize}
+     \input{figtabstex/fig-logisticsvgdnuts}
+  \end{block}
+
+\end{column}
+
+\separatorcolumn
+
+\begin{column}{\colwidth}
+
+\begin{block}{Summary}
+\end{block}
+
+  \begin{block}{References}
+
+    \nocite{*}
+    \footnotesize{\bibliographystyle{plain}\bibliography{poster}}
+
+  \end{block}
+  
+\end{column}
+
+\separatorcolumn
+
+\end{columns}
+\end{frame}
+
+\end{document}

@@ -111,21 +111,31 @@ class BayesianLR:
 
         return np.hstack([dw, np.vstack(dalpha)])  # % first order derivative
 
-    def evaluation(self, theta, X_test):
+    def evaluation(self, theta, X_test, y_test):
         theta = theta[:, :-1]
-        M, n_test = theta.shape[0], len(X_test)
+        M, n_test = theta.shape[0], len(y_test)
 
-        coff = np.zeros([n_test, M])
+        prob = np.zeros([n_test, M])
         for t in range(M):
-            coff[:, t] = np.sum(np.multiply(nm.repmat(theta[t, :], n_test, 1), X_test), axis=1)
+            coff = np.multiply(y_test, np.sum(-1 * np.multiply(nm.repmat(theta[t, :], n_test, 1), X_test), axis=1))
+            prob[:, t] = np.divide(np.ones(n_test), (1 + np.exp(coff)))
 
-        return coff
+        prob = np.mean(prob, axis=1)
+        acc = np.mean(prob > 0.5)
+        llh = np.mean(np.log(prob))
+        return [acc, llh]
 
 
-def train_original_svgd(xs_train, ys_train, xs_test, num_particles=100,
-                        num_steps=10000, lr=0.01, batch_size=100):
+def train_original_svgd(xs_train, ys_train, xs_test, ys_test, num_particles=100,
+                        num_steps=6000, lr=0.05, batch_size=100):
+    ys_train_copy = np.copy(ys_train)
+    ys_train_copy[ys_train == 0] = -1
+
+    ys_test_copy = np.copy(ys_test)
+    ys_test_copy[ys_test == 0] = -1
+
     a0, b0 = 1, 0.01  # hyper-parameters
-    model = BayesianLR(xs_train, ys_train, batchsize=batch_size, a0=a0, b0=b0)  # batchsize = 100
+    model = BayesianLR(xs_train, ys_train_copy, batchsize=batch_size, a0=a0, b0=b0)  # batchsize = 100
 
     # initialization
     D = xs_train.shape[1] + 1
@@ -139,5 +149,5 @@ def train_original_svgd(xs_train, ys_train, xs_test, num_particles=100,
                         debug=False)
     t = time.time() - t
 
-    ys_logits = model.evaluation(theta, xs_test)
-    return ys_logits, t
+    acc, llh = model.evaluation(theta, xs_test, ys_test_copy)
+    return acc, llh, t

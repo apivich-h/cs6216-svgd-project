@@ -57,7 +57,7 @@ class SVGD():
             adj_grad = np.divide(grad_theta, fudge_factor + np.sqrt(historical_grad))
             theta = theta + stepsize * adj_grad
 
-            if (iter+1) % 1000 == 0:
+            if (iter + 1) % 1000 == 0:
                 theta_hist.append(theta)
         return theta, theta_hist
 
@@ -66,6 +66,8 @@ class SVGD():
 Implementation of Stochastic Gradient Langevin Dynamics from https://icml.cc/2011/papers/398_icmlpaper.pdf.
 Inspired by implementaion of SGLD from https://github.com/wiseodd/MCMC/blob/master/algo/sgld.py.
 '''
+
+
 class SLGD():
     def __init__(self):
         pass
@@ -83,13 +85,13 @@ class SLGD():
                 print('iter ' + str(iter + 1))
 
             lnpgrad = lnprob(theta)
-            step_size = 1.0/((iter+2)**0.55)
+            step_size = 1.0 / ((iter + 2) ** 0.55)
             grad_logprior = theta
-            grad = grad_logprior + N/n * lnpgrad
-            adj_grad = step_size/2 * grad + np.random.normal(0, np.sqrt(step_size))
+            grad = grad_logprior + N / n * lnpgrad
+            adj_grad = step_size / 2 * grad + np.random.normal(0, np.sqrt(step_size))
             theta = theta + step_size * adj_grad
 
-            if (iter+1) % 1000 == 0:
+            if (iter + 1) % 1000 == 0:
                 theta_hist.append(theta)
         return theta, theta_hist
 
@@ -164,30 +166,64 @@ if __name__ == '__main__':
     method = "SGLD"
 
     accuracy = []
-    # split the dataset into training and testing
-    for trial in range(1):
-        acc = []
-        print("Trial " + str(trial+1))
-        X_train, X_test, y_train, y_test = train_test_split(X_input, y_input, test_size=0.2)
+    for M in [2, 5, 10, 20, 50, 75, 100, 150, 200, 250]:
+        for trial in range(50):
+            acc = []
+            X_train, X_test, y_train, y_test = train_test_split(X_input, y_input, test_size=0.2)
 
-        a0, b0 = 1, 0.01  # hyper-parameters
-        model = BayesianLR(X_train, y_train, 50, a0, b0)  # batchsize = 50
+            a0, b0 = 1, 0.01  # hyper-parameters
+            model = BayesianLR(X_train, y_train, 50, a0, b0)  # batchsize = 50
 
-        # initialization
-        M = 100  # number of particles
-        theta0 = np.zeros([M, D]);
-        alpha0 = np.random.gamma(a0, b0, M);
-        for i in range(M):
-            theta0[i, :] = np.hstack([np.random.normal(0, np.sqrt(1 / alpha0[i]), d), np.log(alpha0[i])])
-        if method == "SVGD":
-            theta, theta_hist = SVGD().update(x0=theta0, lnprob=model.dlnprob, bandwidth=-1, n_iter=18000, stepsize=0.05, alpha=0.9,
-                              debug=True)
-        elif method == "SGLD":
-            theta, theta_hist = SLGD().update(x0=theta0, lnprob=model.dlnprob, N=100, n=50, n_iter=18000, debug=True)
-        # theta_hist.append(theta)
-        for th in theta_hist:
-            acc.append(model.evaluation(th, X_test, y_test))
-        accuracy.append(acc)
+            theta0 = np.zeros([M, D]);
+            alpha0 = np.random.gamma(a0, b0, M);
+            for i in range(M):
+                theta0[i, :] = np.hstack([np.random.normal(0, np.sqrt(1 / alpha0[i]), d), np.log(alpha0[i])])
+            if method == "SVGD":
+                theta, theta_hist = SVGD().update(x0=theta0, lnprob=model.dlnprob, bandwidth=-1, n_iter=3000,
+                                                  stepsize=0.05, alpha=0.9,
+                                                  debug=True)
+            elif method == "SGLD":
+                theta, theta_hist = SLGD().update(x0=theta0, lnprob=model.dlnprob, N=100, n=50, n_iter=3000, debug=True)
+            else:
+                raise NotImplementedError
+            # theta_hist.append(theta)
+            # for th in theta_hist:
+            #     acc.append(model.evaluation(th, X_test, y_test))
+            acc.append(model.evaluation(theta, X_test, y_test))
+        accuracy.append(np.array(acc).mean())
     accuracy = np.array(accuracy)
     # accuracy = accuracy.mean(axis=0)
-    np.savetxt("results/sgld_covtype_2epochs_100particles.csv", accuracy, delimiter=",")
+    np.savetxt("results/sgld_covtype_3000iter.csv", accuracy, delimiter=",")
+
+
+    method = "SVGD"
+
+    accuracy = []
+    for M in [2, 5, 10, 20, 50, 75, 100, 150, 200, 250]:
+        for trial in range(50):
+            acc = []
+            X_train, X_test, y_train, y_test = train_test_split(X_input, y_input, test_size=0.2)
+
+            a0, b0 = 1, 0.01  # hyper-parameters
+            model = BayesianLR(X_train, y_train, 50, a0, b0)  # batchsize = 50
+
+            theta0 = np.zeros([M, D]);
+            alpha0 = np.random.gamma(a0, b0, M);
+            for i in range(M):
+                theta0[i, :] = np.hstack([np.random.normal(0, np.sqrt(1 / alpha0[i]), d), np.log(alpha0[i])])
+            if method == "SVGD":
+                theta, theta_hist = SVGD().update(x0=theta0, lnprob=model.dlnprob, bandwidth=-1, n_iter=3000,
+                                                  stepsize=0.05, alpha=0.9,
+                                                  debug=True)
+            elif method == "SGLD":
+                theta, theta_hist = SLGD().update(x0=theta0, lnprob=model.dlnprob, N=100, n=50, n_iter=3000, debug=True)
+            else:
+                raise NotImplementedError
+            # theta_hist.append(theta)
+            # for th in theta_hist:
+            #     acc.append(model.evaluation(th, X_test, y_test))
+            acc.append(model.evaluation(theta, X_test, y_test))
+        accuracy.append(np.array(acc).mean())
+    accuracy = np.array(accuracy)
+    # accuracy = accuracy.mean(axis=0)
+    np.savetxt("results/svgd_covtype_3000iter.csv", accuracy, delimiter=",")

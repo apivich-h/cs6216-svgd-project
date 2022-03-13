@@ -18,7 +18,7 @@ The paper proposes a general purpose variational inference algorithm -- Stein Va
 	\end{algorithmic}
 \end{algorithm}
 
-The pseudocode of the Stein Variation Gradient Descent (SVGD) algorithm is in Algorithm \ref{alg:svgd}. The goal of this algorithm is to perform inference on a target distribution $p(x)$ on $\mathcal{X}=\mathbb{R}^d$. The paper reduces this problem to obtaining multiple samples from a distribution $q(x)$ that has small KL divergence with regard to the target distribution $p(x)$, i.e. to solve the following problem.
+The pseudocode of the Stein Variation Gradient Descent (SVGD) algorithm is in Algorithm \ref{alg:svgd}. The ultimate goal of this algorithm is to perform inference on a target distribution $p(x)$ on $\mathcal{X}=\mathbb{R}^d$. To do that, the algorithm obtains multiple samples from a distribution $q(x)$ that has small KL divergence with regard to the target distribution $p(x)$, by solving the following problem.
 
 \begin{align}
     \arg\min_q KL(q(x)\lVert p(x)),\ sample\ x_1,\cdots,x_n\sim q(x)
@@ -46,7 +46,7 @@ The algorithm is designed with the following key ingredients.
 
 \subsection{Extreme case of SVGD with $n=1$ particle.} 
 
-The SVGD algorithm under one particle is equivalent to MAP estimate under gradient descent of $\log p(x)$ where $p(x)$ is the target distribution.
+The SVGD algorithm under one particle is equivalent to MAP estimate under gradient descent of $\log p(x)$ where $p(x)$ is the target distribution. \footnote{This is covered in the paper authors' blog \url{}.}
 
 \subsection{Performance of SVGD in terms of Estimation Error}
 
