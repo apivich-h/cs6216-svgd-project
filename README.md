@@ -20,10 +20,18 @@ Paper: `https://arxiv.org/pdf/1608.04471.pdf`
   - original-code/Toy-Examples/simple_scalability_test.py
   - original-code/Toy-Examples/simple_scalability_test_numpyro.py
 
+## Small scale Logistic Regression
+
+- bayesian_logistic_realdata.py
+
 ## Bayesian Logistic Regression on binary Covertype
 - For figure 5
   - bayeisan_logistic_covtype.py
   - dsvi_logistic_covtype.py
+
+## Bayesian Neural network
+
+- bayesian_nn_uci.py
 
 ## Links to public codebases used in this project:
 ### SVGD:
