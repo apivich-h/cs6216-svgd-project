@@ -2,10 +2,11 @@
 
 Paper: `https://arxiv.org/pdf/1608.04471.pdf`
 
+All the code files mentioned below are ours. The original authors' code is at [original-code/Stein-Variational-Gradient-Decent](./original-code/Stein-Variational-Gradient-Descent/)
 
 ## Toy Example (Gaussian mixture 1d)
 
-- In browser demo: [svgd_toy.html](./svgd_toy.html)
+- In browser demo: [svgd_toy.html](https://apivich-h.github.io/cs6216-svgd-project/svgd_toy.html)
 
 - For figure 1
   - original-code/Toy-Examples/mixture1d.py
