@@ -1,6 +1,7 @@
-\begin{table}[]
+\begin{table}[t]
     \centering
-    \begin{tabular}{|c|ccc|}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{|c|ccc|ccc|}
 \hline
  & \multicolumn{3}{|c|}{Accuracy} & \multicolumn{3}{|c|}{Average log-likelihood} \\
 \hline
@@ -15,12 +16,13 @@ twonorm & 0.973 \pm 0.001 & 0.973 \pm 0.001 & 0.973 \pm 0.002 & -0.070 \pm 0.003
 waveform & 0.881 \pm 0.010 & 0.874 \pm 0.010 & 0.779 \pm 0.012 & -0.265 \pm 0.015 & -0.266 \pm 0.014 & -0.450 \pm 0.017 \\
 \hline
 \end{tabular}
-    \caption{Average time required to run each algorithms on small Bayesian regression tasks.}
+}
+    \caption{Accuracy and log-likelihood obtained from each algorithms on small Bayesian regression tasks.}
     \label{tab:logist-acc}
 \end{table}
 
 
-\begin{table}[]
+\begin{table}[t]
     \centering
     \begin{tabular}{|c|ccc|}
 \hline

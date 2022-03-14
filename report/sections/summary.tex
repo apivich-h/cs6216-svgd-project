@@ -1,6 +1,6 @@
 \section{Summary of the Paper}
 
-The paper proposes a general purpose variational inference algorithm -- Stein Variation Gradient Descent (SVGD). In this section, we summarize the author's justification for the design of the SVGD algorithm. The pseudocode is in Algorithm \ref{alg:svgd}. The ultimate goal of the SVGD algorithm is to perform inference on a target distribution $p(x)$ on $\mathcal{X}=\mathbb{R}^d$, i.e. to estimate $\mathbb{E}_{x\sim p(x)}[f(x)]$ for some function $f(x)$, or to estimate the shape of the distribution $p(x)$. To do that, the algorithm constructs and updates multiple particles $x_1, \cdots, x_n$, which approximates a distribution $q(x)$ that has small KL divergence with regard to the target distribution $p(x)$. More specifically, they aim to solve the following problem.
+The paper proposes a general-purpose variational inference algorithm -- Stein Variation Gradient Descent (SVGD). In this section, we summarize the author's justification for the design of the SVGD algorithm. The pseudocode is in Algorithm \ref{alg:svgd}. The ultimate goal of the SVGD algorithm is to perform inference on a target distribution $p(x)$ on $\mathcal{X}=\mathbb{R}^d$, i.e. to estimate $\mathbb{E}_{x\sim p(x)}[f(x)]$ for some function $f(x)$, or to estimate the shape of the distribution $p(x)$. To do that, the algorithm constructs and updates multiple particles $x_1, \cdots, x_n$, which approximates a distribution $q(x)$ that has small KL divergence with regard to the target distribution $p(x)$. More specifically, they aim to solve the following problem.
 
 % We first summarize the author's justification for the design of the SVGD algorithm, and then explain the extreme case, scalability, and performance of the SVGD algorithm.
 
@@ -43,6 +43,7 @@ The algorithm is designed with the following key ingredients.
     \item Approximation for $\phi$ with discrete particles $x_1, \cdots, x_n$: the closed-form solution \eqref{eqn:solution} involves high dimensional integration that is often intractable. Therefore, the author uses $n$ discrete particles $x_1, \cdots, x_n$ drawn from $q$ to perform the Monte Carlo estimate for the integral. In each iteration, the particle is then updated with the estimated mapping $T = I + \epsilon \phi$.
 \end{enumerate}
 
+The summation term in the iterative update step of the algorithm can be seen to have two parts. The first term is an attractive term that tries to maximize $\log p(x)$. The second term is a repulsive term that maximizes the difference between the two points through the kernel function. Balancing the two terms allow SVGD to pick samples with high $p(x)$ but are also different from each other.
 
 % \subsection{Extreme case of SVGD with $n=1$ particle.} 
 
