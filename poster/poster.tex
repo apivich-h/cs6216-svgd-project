@@ -83,7 +83,7 @@ Jiayuan Ye\inst{1} }
 \begin{block}{Problem Setting}
 
 \begin{itemize}
-    \item The aim is to generate a set of particles that provides a good approximation of some probability distribution. This is useful in Bayesian inference problem.
+    \item The aim is to generate a set of particles that provides a good approximation of a target probability distribution. This is useful in Bayesian inference problem.
     
     \item The work uses Stein discrepancy to develop a variational inference method that works for a general inference problem and is also scalable.
 \end{itemize}
@@ -99,7 +99,7 @@ Jiayuan Ye\inst{1} }
 \begin{itemize}
     \item {\bfseries Input:} A target distribution with density function $p(x)$ and a set of initial particles $\{x_i^0\}_{i=1}^n$.
     \item {\bfseries Output:} A set of particles $\{x_i\}_{i=1}^n$ that approximates the target distribution.
-    \item {\bfseries Iterative Particle update:} for iteration $\ell$, $x_i^{\ell+1}\leftarrow x_i^l + \epsilon_l \hat{\mathbf{\phi}}^*(x_i^\ell)$, 
+    \item {\bfseries Iterative Particle update:} for iteration $\ell$, $x_i^{\ell+1}\leftarrow x_i^\ell + \epsilon_\ell \hat{\mathbf{\phi}}^*(x_i^\ell)$, 
 	where $\hat{\mathbf{\phi}}^*(x) = \frac{1}{n} \sum_{j=1}^n\left[ k(x_{j}^\ell, x)\nabla_{x_j^\ell}\log p(x_j^\ell) + \nabla_{x_j^\ell} k(x_j^\ell, x)\right]$
 \end{itemize}
 \end{block}
