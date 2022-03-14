@@ -3,26 +3,33 @@
 \subsection{SVGD Algorithm on NumPyro}
 \label{ssect:svgd-npy}
 
-SVGD is an algorithm which allows us to generate samples from the posterior distribution and perform inference. As a result, the SVGD algorithm can be used in probabilistic programming language as another method to perform variational inference on. However, the original SVGD algorithm uses the posterior probability, which for more general purposes, may not be feasible. 
+SVGD is an algorithm that allows us to generate samples from the posterior distribution and perform inference. As a result, the SVGD algorithm can be used in probabilistic programming languages as another method to perform variational inference. However, the original SVGD algorithm uses the posterior probability directly, which for more general purposes, may not be feasible to compute. It is also inconvenient for the users of the algorithm if the posterior has to be specified directly for each inference problem to be conducted.
 
-To perform variational inference, NumPyro provides a method to track the evidence lower bound (ELBO) of some model parameter. While the SVGD algorithm in the paper attempts to minimise the true posterior, in the implementations of SVGD found the ELBO is used as the optimisation objective instead. In theory, the SVGD algorithm will still work, returning points which minimises the ELBO (rather than the true posterior) but are also more spread out. 
+To perform variational inference, NumPyro provides a method to track the evidence lower bound (ELBO) of some model parameter, and perform auto-differentiation of the function. While the SVGD algorithm in the paper attempts to minimise the true posterior, in the implementations of SVGD found the ELBO is used as the optimisation objective instead. In theory, the SVGD algorithm will still work, returning points that minimises the ELBO (rather than the true posterior) but are also more spread out. 
 
 Additionally, using the entire dataset to compute the ELBO in each timestep is too costly. As a result, in each update step, the algorithm will subsample some number of training data, and use the subset of data to compute the approximate ELBO. This is equivalent to the use of batches in stochastic gradient descent.
 
 We note that NumPyro is closely related to Pyro. However, the main difference is NumPyro uses JAX and NumPy in the backend, while Pyro uses PyTorch. Since we are not running experiments on GPUs, we chose to run the experiments on NumPyro which is more lightweight.
 
-\subsection{Bayesian Logistic Regression Tests}
+We also note that there seems to be fewer examples of usages of SVGD in practice, as seen in the NumPyro documentation pages where the tutorials favor sampling algorithms such as NUTS or simple variational inference algorithms more. This may be down to the fact that for practitioners, the SVGD algorithm can be seen as more complex and harder to tune than other simpler inference algorithms, while also not providing a large increase in performance. For example, in our tests on small-scale logistic regression algorithms, MCMC-based algorithms perform just as well as SVGD, therefore there was little reason to use it over simpler MCMC algorithms. 
+
+\subsection{SVGD and SGLD on Covertype}
+Both algorithms sometimes experience computational instability when computing the gradient of the log-likelihood of the posterior, even using the official implementation of SVGD. However, SVGD encounters much fewer errors during the same amount of trials than SGLD. Interestingly, when the scaling factor in SGLD is tuned down, the algorithm becomes much more stable. Specifically, the scaling factor for the gradient of the log-likelihood in SGLD is $\frac{N}{n}$, where $N$ is the total amount of data and $n$ is batch size. Due to the small batch size (replicating the batch size in the original paper) and large dataset size, it has been noticed that this choice of scaling factor is often the cause of overflows in debugger. To ensure computational stability, the scaling factor is clipped to less than $10^2$.
+
+\subsection{Bayesian Logistic Regression Tests}\label{ssect:bylog-data}
+
+We present the results from the small-scale logistic regression tasks using the NUTS algorithm and also both implementations of the SVGD algorithm. In Table \ref{tab:logist-acc}, we can see that all three algorithms perform about as well as each other on these tests. However, the SVGD algorithm on NumPyro requires a much higher running time, as seen in Table \ref{tab:logist-time}. 
 
 \input{figtabstex/tab-logist-small}
 
 \subsection{Bayesian Neural Network Tests}\label{ssect:bnn-time}
 
-In Table \ref{tab:bnn_time}, we report the average time to run each of the dataset training with each algorithm. We can see that amongst the three algorithms, the original implementation of SVGD runs the fastest.
+In Table \ref{tab:bnn_time}, we report the average time to run each of the dataset training with each algorithm. We can see that amongst the three algorithms, the original implementation of SVGD runs the fastest. This is due to the fact that the posterior distribution is computed in closed form for the algorithm, unlike the SVGD algorithm with ELBO objective, which requires more time for ELBO estimation.
 
 \input{figtabstex/tab-bnn-time}
 
 \label{ssect:bnn-epoch}
 
-We also show how training is affected as the algorithm runs more epochs. In Figure \ref{fig:bnn-epoch}, we show the results when an instance of the BNN training is trained for up to a certain number of epochs. 
+We also show how training is affected as the algorithm runs more epochs. In Figure \ref{fig:bnn-epoch}, we show the results when an instance of the BNN training is trained for up to a certain number of epochs. We can see that given the training is conducted for long enough, the SVGD algorithm will eventually ``catch up" to the PBP algorithm in terms of performance.
 
 \input{figtabstex/fig-bnn-epochs}

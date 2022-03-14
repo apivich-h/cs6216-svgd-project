@@ -83,9 +83,9 @@ Jiayuan Ye\inst{1} }
 \begin{block}{Problem Setting}
 
 \begin{itemize}
-    \item The aim is to generate a set of particles which provides a good approximation of some probability distribution. This is useful in Bayesian inference problem.
+    \item The aim is to generate a set of particles that provides a good approximation of some probability distribution. This is useful in Bayesian inference problem.
     
-    \item The work uses Stein discrepancy to develop a variational inference method which works for a general inference problem and is also scalable.
+    \item The work uses Stein discrepancy to develop a variational inference method that works for a general inference problem and is also scalable.
 \end{itemize}
 
 \input{figtabstex/img-setting}
@@ -104,13 +104,13 @@ Jiayuan Ye\inst{1} }
 \end{itemize}
 \end{block}
 
-  \begin{block}{Experiment: Toy Example of one dimensional Gaussian Mixture}=
+  \begin{block}{Experiment: Toy Example of One-dimensional Gaussian Mixture}
     \input{figtabstex/fig-toy1d}
     
     \begin{enumerate}
         \item When the two modes are far apart from each other, the SVGD algorithm converges more slowly, as in Figure 1. (2).
         \item When the smaller mode is far away from the initialization distribution, the particles in the SVGD algorithm have difficulty visiting the smaller mode, as in Figure 1. (3).
-        \item Replacing the weighted negative log likelihood $\rightarrow$ a single loss function such as the ELBO: This ELBO-within-Stein algorithm is implemented NumPyro, and we found that when applying it to Gaussian mixture, the particles seem to converge faster and only need 100 iterations, as in Figure 1. (4). 
+        \item Replacing the weighted negative log-likelihood $\rightarrow$ a single loss function such as the ELBO: This ELBO-within-Stein algorithm is implemented NumPyro, and we found that when applying it to Gaussian mixture, the particles seem to converge faster and only need 100 iterations, as in Figure 1. (4). 
     \end{enumerate}
   \end{block}
   
@@ -126,10 +126,10 @@ Jiayuan Ye\inst{1} }
     
 
 
-\begin{block}{Experiment: SVGD vs Monte Carlo for mean estimation}
+\begin{block}{Experiment: SVGD vs Monte Carlo for Mean Estimation}
     \begin{enumerate}
     \item SVGD performs better than Monte Carlo sampling (Smaller MSE).
-    \item Larger step size for SVGD might converge faster but might also lead to larger error.
+    \item A larger step size for SVGD might converge faster but might also lead to a larger error.
     \end{enumerate}
     \input{figtabstex/fig-toy1dmc}
 \end{block}
@@ -162,8 +162,9 @@ Jiayuan Ye\inst{1} }
   \begin{block}{Experiment: Bayesian Logistic Regression on Large Datasets}
   \textbf{Bayesian Linear Regression} on binary Covertype dataset 
     \begin{itemize}
-     \item Compare the test accuracy between SVGD \cite{liu2016stein} and SGLD \cite{welling2011bayesian}
-     \item Visualize the effect of particle size on test accuracy
+     \item SVGD \cite{liu2016stein} consistently outperforms SGLD \cite{welling2011bayesian} in test accuracy
+     \item SVGD is also more particle efficient than SGLD
+     \item Training is noisier than what the paper reported originally
     \end{itemize}
     \input{figtabstex/fig-covertype}
   \end{block}
@@ -172,7 +173,7 @@ Jiayuan Ye\inst{1} }
   \begin{itemize}
       \item Compare the RMSE and log-likelihood between SVGD implementations and the probabilistic back-propagation (PBP) algorithm
       
-      \item We are able to show that the original implementation of SVGD algorithm outperforms PBP, however the NumPyro implementation often cannot perform as well
+      \item We are able to show that the original implementation of SVGD algorithm outperforms PBP, however, the NumPyro implementation often cannot perform as well
   \end{itemize}
   \input{figtabstex/tab-bnn}
   \end{block}

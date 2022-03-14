@@ -6,24 +6,18 @@ In this section, we list down the sources of publicly available code we used thr
     \item https://num.pyro.ai/en/latest/examples/stein\_bnn.html (example of the SVGD module on NumPyro)
 \end{itemize}
 
-\subsection{SGLD}
+\subsection{Other Algorithms Used}
 \begin{itemize}
-    \item https://github.com/wiseodd/MCMC/blob/master/algo/sgld.py
-\end{itemize}
-
-\subsection{DSVI}
-\begin{itemize}
-    \item https://github.com/matsur8/dsvi
-\end{itemize}
-
-\subsection{PBP}
-\begin{itemize}
-    \item https://github.com/HIPS/Probabilistic-Backpropagation
+    \item https://github.com/wiseodd/MCMC/blob/master/algo/sgld.py (SGLD algorithm, used as comparison for large-scale logistic regression tasks)
+    \item https://github.com/matsur8/dsvi (DSVI algorithm)
+    \item https://github.com/HIPS/Probabilistic-Backpropagation (Probabilistic Back-propagation algorithm, used as comparison in BNN training)
 \end{itemize}
 
 \subsection{Dataset Used}
 \begin{itemize}
     \item https://www.csie.ntu.edu.tw/\textasciitilde cjlin/libsvmtools/datasets/binary.html (data for the small logistic regression task)
     
-    \item https://github.com/ratschlab/bnn\_priors/tree/main/bnn\_priors (data for UCI dataset, with splitting of data into train-test sets)
+    \item https://github.com/dilinwang820/Stein-Variational-Gradient-Descent/blob/master/data/covertype.mat (binary Covertype dataset used in the original paper)
+    
+    \item https://github.com/ratschlab/bnn\_priors/tree/main/bnn\_priors (data for UCI dataset used for BNN tests, with splitting of data into train-test sets)
 \end{itemize}
