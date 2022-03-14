@@ -2,7 +2,8 @@
 
 Paper: `https://arxiv.org/pdf/1608.04471.pdf`
 
-All the code files mentioned below are ours. The original authors' code is at [original-code/Stein-Variational-Gradient-Decent](./original-code/Stein-Variational-Gradient-Descent/)
+All the code files mentioned below are written by us or partially written by us (details are in the code comments and the `Links to public codebases` session below).   
+The original paper's code is copied into this folder for a reference: [original-code/Stein-Variational-Gradient-Decent](./original-code/Stein-Variational-Gradient-Descent/)  
 
 ## Toy Example (Gaussian mixture 1d)
 
