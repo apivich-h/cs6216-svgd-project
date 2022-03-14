@@ -127,7 +127,7 @@ class BayesianLR:
 
 
 def train_original_svgd(xs_train, ys_train, xs_test, ys_test, num_particles=100,
-                        num_steps=6000, lr=0.05, batch_size=100):
+                        num_steps=1000, lr=0.05, batch_size=100):
     ys_train_copy = np.copy(ys_train)
     ys_train_copy[ys_train == 0] = -1
 

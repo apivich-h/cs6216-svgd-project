@@ -19,22 +19,18 @@
 % bo added. figure pos
 % \usepackage{float}
 
+% adjust space
+\setlength{\belowcaptionskip}{-5pt}
+
 \begin{document}
 %
 \title{CS6216 Project Report: \\Stein Variational Gradient Descent}
 %
-%\titlerunning{Abbreviated paper title}
-% If the paper title is too long for the running head, you can set
-% an abbreviated paper title here
-%
-\author{Apivich Hemachandra\inst{1}\orcidID{0000-1111-2222-3333} \and
+\author{Apivich Hemachandra\inst{1}\orcidID{A0242183L} \and
 Jiashu Tao\inst{1}\orcidID{A0159714X} \and
 Bo Wang\inst{1}\orcidID{A0219236E}   \and
-Jiayuan Ye\inst{1} }
+Jiayuan Ye\inst{1}\orcidID{A0219122R} }
 %
-%\authorrunning{F. Author et al.}
-% First names are abbreviated in the running head.
-% If there are more than two authors, 'et al.' is used.
 %
 \institute{School of Computing, National University of Singapore, Singapore\\{\small\textsuperscript{*}Alphabetical Order.}}
 
@@ -42,7 +38,7 @@ Jiayuan Ye\inst{1} }
 \maketitle              % typeset the header of the contribution
 %
 
-\input{report/sections/abstract}
+%\input{report/sections/abstract}
 \input{report/sections/introduction}
 \input{report/sections/summary}
 \input{report/sections/experiments}
@@ -69,9 +65,13 @@ Titsias, M., Lázaro-Gredilla, M. (2014, June). Doubly stochastic variational Ba
 
 \bibitem{nuts}
 M. D. Hoffman and A. Gelman. The No-U-Turn sampler: Adaptively setting path lengths in Hamiltonian Monte Carlo. The Journal of Machine Learning Research, 15(1):1593–1623, 2014.
+
+\bibitem{pbp}
+José Miguel Hernández-Lobato and Ryan P. Adams. 2015. Probabilistic backpropagation for scalable learning of Bayesian neural networks. In Proceedings of the 32nd International Conference on International Conference on Machine Learning - Volume 37 (ICML'15). JMLR.org, 1861–1869.
 \end{thebibliography}
 
 \appendix
 \input{report/sections/contrib}
 \input{report/sections/appendix_code}
+\input{report/sections/appendix_other_data}
 \end{document}
