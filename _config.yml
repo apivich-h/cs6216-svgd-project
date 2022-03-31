@@ -1,0 +1,12 @@
+exclude:
+  - bbb
+  - data_convertype
+  - data_uci
+  - figtabstex
+  - original-code
+  - pbp
+  - poster
+  - pyro_code
+  - report
+  - results
+  - roy

@@ -10,17 +10,17 @@ The original paper's code is copied into this folder for a reference: [original-
 - In browser demo: [svgd_toy.html](https://apivich-h.github.io/cs6216-svgd-project/svgd_toy.html)
 
 - For figure 1
-  - original-code/Toy-Examples/mixture1d.py
-  - original-code/Toy-Examples/mixture1d_numpyro.py
+  - toy/Toy-Examples/mixture1d.py
+  - toy/Toy-Examples/mixture1d_numpyro.py
 
 - For figure 2
-  - original-code/Toy-Examples/mixture_fig2_simple.py
+  - toy/Toy-Examples/mixture_fig2_simple.py
 
 ## Running time vs number of particles
 
 - For figure 3
-  - original-code/Toy-Examples/simple_scalability_test.py
-  - original-code/Toy-Examples/simple_scalability_test_numpyro.py
+  - toy/Toy-Examples/simple_scalability_test.py
+  - toy/Toy-Examples/simple_scalability_test_numpyro.py
 
 ## Small scale Logistic Regression
 
