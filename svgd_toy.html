@@ -27,6 +27,13 @@
         height: 400px;
         width: 800px;
       }
+      .damit {
+        font-family: monospace;
+        margin: 5px;
+      }
+      .damit label {
+        margin-left: 5px;
+      }
     </style>
   </head>
 
@@ -34,6 +41,18 @@
     <h2>
       SVGD Gaussian Mixture Toy Example in browser
     </h2>
+    <div class="damit">
+      <label>Weight1</label>
+      <input id="param-w1" value="0.3333">
+      <label>mu</label>
+      <input id="param-mu" value="2.0">
+      <label>step-size</label>
+      <input id="param-step-size" value="0.1">
+      <label>plot-list</label>
+      <input id="param-check-iters-list" value="[0, 50, 100, 150, 200]">
+      <label>particle-count</label>
+      <input id="param-particle-count" value="200">
+    </div>
     <textarea id="code" value="sum([1, 2, 3, 4, 5])" style="display: none;" /></textarea>
     <button id="showcode-btn" onclick="toggleVisible()">ToggleCode</button>
     <button id="run-btn" onclick="evaluatePython()">Run</button>
@@ -51,10 +70,20 @@ const plotsel = document.getElementById("plot-idx");
 function toggleVisible() {
   code.style.display = code.style.display == "block" ? "none" : "block";
 }
-
 code.value = `
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
+from scipy.stats import norm
+
+
+w1 = EXTERNAL_W1
+mu = EXTERNAL_MU
+mu1 = - mu
+mu2 = mu
+w2 = 1.0 - w1
+sigma1 = 1.0
+sigma2 = 1.0
+particle_count = EXTERNAL_PARTICLE_COUNT
 
 class SVGD():
 
@@ -140,6 +169,13 @@ class Mixture1d:
         vfunc = np.vectorize(func)
         return vfunc(points)
 
+    def pdf_data(self):
+        x = np.array([-11.75, -11.25, -10.75, -10.25, -9.75, -9.25, -8.75, -8.25, -7.75, -7.25, -6.75, -6.25, -5.75, -5.25, -4.75, -4.25, -3.75, -3.25, -2.75, -2.25, -1.75, -1.25, -0.75, -0.25, 0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25, 5.75, 6.25, 6.75, 7.25, 7.75, 8.25, 8.75, 9.25, 9.75, 10.25, 10.75, 11.25, 11.75])
+        curve_0 = norm.pdf(x, self.mu1, self.sigma1)
+        curve_1 = norm.pdf(x, self.mu2, self.sigma2)
+        curve = self.w1 * curve_0 + self.w2 * curve_1
+        return [particle_count * 0.5 * float(x) for x in curve]
+
 
 def assertions():
     model = Mixture1d(1/3, -2, 1, 2/3, 2, 1)
@@ -154,26 +190,17 @@ def assertions():
 
 assertions()
 np.random.seed(5432)
-
-w1 = 1/3
-mu = 2.0
-mu1 = -mu
-mu2 = mu
-w2 = 2/3
-sigma1 = 1.0
-sigma2 = 1.0
 model = Mixture1d(w1, mu1, sigma1, w2, mu2, sigma2)
 
-x0 = np.random.normal(-10,1,[100,1])
+x0 = np.random.normal(-10,1,[particle_count,1])
 x_after = x0
 
-step_size = 0.1
-# step_size = 0.25
-check_iters = [0, 50, 75, 100, 150, 500]
+step_size = EXTERNAL_STEP_SIZE
+check_iters = EXTERNAL_CHECK_ITERS_LIST
 print("check_iters:", check_iters)
 
-middle_logs = [];
-middle_results = [];
+middle_logs = []
+middle_results = []
 def save_on_check_iter_func2(iter_idx, theta):
     if iter_idx in check_iters:
         idx = check_iters.index(iter_idx)
@@ -184,11 +211,23 @@ def save_on_check_iter_func2(iter_idx, theta):
         middle_results.append([x[0] for x in theta])
 
 
+
 save_on_check_iter_func = save_on_check_iter_func2
 save_on_check_iter_func(0, x_after)
 x_after = SVGD().update(x0, model.dlnprob, n_iter=check_iters[-1], stepsize=step_size, callback=save_on_check_iter_func)
-[middle_logs, middle_results]
+[middle_logs, middle_results, model.pdf_data()]
 `;
+
+let elem_step_size = document.getElementById("param-step-size");
+let elem_check_iters_list = document.getElementById("param-check-iters-list");
+let elem_w1 = document.getElementById("param-w1");
+let elem_mu = document.getElementById("param-mu");
+let elem_particle_count = document.getElementById("param-particle-count");
+
+
+function get_replaced_code(template_code, w1, mu, step_size, check_iters_list, particle_count) {
+  return template_code.replace("EXTERNAL_MU", mu).replace("EXTERNAL_W1", w1).replace("EXTERNAL_STEP_SIZE", step_size).replace("EXTERNAL_CHECK_ITERS_LIST", check_iters_list).replace("EXTERNAL_PARTICLE_COUNT", particle_count);
+} 
 
 async function addToOutput(s) {
   output.value += s + "\n";
@@ -210,18 +249,26 @@ async function main() {
 let pyodideReadyPromise = main();
 
 async function evaluatePython() {
+  let step_size = elem_step_size.value;
+  let iters_list = elem_check_iters_list.value;
+  let w1 = elem_w1.value;
+  let mu = elem_mu.value;
+  let particle_count = elem_particle_count.value;
+  let replaced_code = get_replaced_code(code.value, w1, mu, step_size, iters_list, particle_count);
+  console.log("--- executing:");
+  console.log(replaced_code);
   let pyodide = await pyodideReadyPromise;
   try {
     await addToOutput("========= start running code =========");
-    let output = pyodide.runPython(code.value);
+    let output = pyodide.runPython(replaced_code);
     let js_output = output.toJs();
     await addToOutput("========= end running code =========");
     console.log(js_output);
-    let [loglines, data] = js_output;
+    let [loglines, data, pdf_data] = js_output;
     for (let line of loglines) {
       addToOutput(line);
     }
-    histogram_data(data);
+    histogram_data(data, pdf_data);
     await addToOutput("========= end of printing result =========");
   } catch (err) {
     await addToOutput(err);
@@ -241,24 +288,40 @@ function histogram(data, min, max, size) {
   return [bins, histogram.slice(0, size)];
 }
 
+let last_chart = null;
 let plotsel_onchange_handler = () => {
   let sel = plotsel.value;
   let data = window._last_data[sel];
+  let pdf_data = window._last_pdf_data;
   const ctx = document.getElementById('histogram').getContext('2d');
 
   let [bins, hist_data] =  histogram(data, -12, 12, 48);
   let labels = bins.map((p) => "" +  (p[0] + p[1])/2 + "");
-  const chart = new Chart(ctx, {
+  if (last_chart !== null) last_chart.destroy();
+  last_chart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: labels,
       datasets: [{
         label: 'histogram',
         data: hist_data,
-        backgroundColor: 'green',
+        backgroundColor: `rgba(50,180,30,0.5)`,
+      },
+      {
+        label: 'PDF',
+        data: pdf_data,
+        type: 'line',
+        backgroundColor: `rgba(0,100,240,0.5)`,
       }]
     },
     options: {
+      elements:{
+          point:{
+              borderWidth: 0,
+              radius: 0,
+              backgroundColor: 'rgba(0,0,0,0)'
+          }
+      },
       scales: {
         xAxes: [{
           display: false,
@@ -284,8 +347,9 @@ let plotsel_onchange_handler = () => {
 };
 plotsel.addEventListener("change", plotsel_onchange_handler);
 
-function histogram_data(data) {
+function histogram_data(data, pdf_data) {
   window._last_data = data;
+  window._last_pdf_data = pdf_data;
   plotsel.min = 0;
   plotsel.max = data.length - 1;
   plotsel.disabled = false;
