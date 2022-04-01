@@ -52,6 +52,8 @@
       <input id="param-check-iters-list" value="[0, 50, 100, 150, 200]">
       <label>particle-count</label>
       <input id="param-particle-count" value="200">
+      <label>bandwidth</label>
+      <input id="param-bandwidth" value="-1">
     </div>
     <textarea id="code" value="sum([1, 2, 3, 4, 5])" style="display: none;" /></textarea>
     <button id="showcode-btn" onclick="toggleVisible()">ToggleCode</button>
@@ -84,6 +86,7 @@ w2 = 1.0 - w1
 sigma1 = 1.0
 sigma2 = 1.0
 particle_count = EXTERNAL_PARTICLE_COUNT
+my_bandwidth = EXTERNAL_BANDWIDTH
 
 class SVGD():
 
@@ -108,7 +111,7 @@ class SVGD():
         return (Kxy, dxkxy)
     
  
-    def update(self, x0, lnprob, n_iter = 1000, stepsize = 1e-3, bandwidth = -1, alpha = 0.9, debug = False, callback=None):
+    def update(self, x0, lnprob, n_iter = 1000, stepsize = 1e-3, alpha = 0.9, debug = False, callback=None):
         # Check input
         if x0 is None or lnprob is None:
             raise ValueError('x0 or lnprob cannot be None!')
@@ -124,7 +127,7 @@ class SVGD():
             
             lnpgrad = lnprob(theta)
             # calculating the kernel matrix
-            kxy, dxkxy = self.svgd_kernel(theta, h = -1)  
+            kxy, dxkxy = self.svgd_kernel(theta, h = my_bandwidth)  
             grad_theta = (np.matmul(kxy, lnpgrad) + dxkxy) / x0.shape[0]  
             
             # adagrad 
@@ -223,10 +226,10 @@ let elem_check_iters_list = document.getElementById("param-check-iters-list");
 let elem_w1 = document.getElementById("param-w1");
 let elem_mu = document.getElementById("param-mu");
 let elem_particle_count = document.getElementById("param-particle-count");
+let elem_bandwidth = document.getElementById("param-bandwidth");
 
-
-function get_replaced_code(template_code, w1, mu, step_size, check_iters_list, particle_count) {
-  return template_code.replace("EXTERNAL_MU", mu).replace("EXTERNAL_W1", w1).replace("EXTERNAL_STEP_SIZE", step_size).replace("EXTERNAL_CHECK_ITERS_LIST", check_iters_list).replace("EXTERNAL_PARTICLE_COUNT", particle_count);
+function get_replaced_code(template_code, w1, mu, step_size, check_iters_list, particle_count, my_bandwidth) {
+  return template_code.replace("EXTERNAL_MU", mu).replace("EXTERNAL_W1", w1).replace("EXTERNAL_STEP_SIZE", step_size).replace("EXTERNAL_CHECK_ITERS_LIST", check_iters_list).replace("EXTERNAL_PARTICLE_COUNT", particle_count).replace("EXTERNAL_BANDWIDTH", my_bandwidth);
 } 
 
 async function addToOutput(s) {
@@ -254,7 +257,8 @@ async function evaluatePython() {
   let w1 = elem_w1.value;
   let mu = elem_mu.value;
   let particle_count = elem_particle_count.value;
-  let replaced_code = get_replaced_code(code.value, w1, mu, step_size, iters_list, particle_count);
+  let my_bandwidth = elem_bandwidth.value;
+  let replaced_code = get_replaced_code(code.value, w1, mu, step_size, iters_list, particle_count, my_bandwidth);
   console.log("--- executing:");
   console.log(replaced_code);
   let pyodide = await pyodideReadyPromise;

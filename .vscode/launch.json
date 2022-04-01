@@ -8,7 +8,7 @@
       "name": "Python: mixture1d",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/original-code/Toy-Examples/mixture1d.py",
+      "program": "${workspaceFolder}/toy/Toy-Examples/mixture1d.py",
       "console": "integratedTerminal",
       "justMyCode": true
     },
